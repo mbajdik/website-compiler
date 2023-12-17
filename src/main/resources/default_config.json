@@ -1,0 +1,25 @@
+{
+  "minifier": {
+    "options": [
+      "--minify-js",
+      "--minify-css",
+      "--collapse-whitespace"
+    ]
+  },
+  "make": {
+    "mode": "root_only",
+    "ignore_hidden": true,
+    "threads": 3,
+
+    "hooks": {
+      "pre_build": [],
+      "pro_build": []
+    },
+    "hook_runner": ["/bin/bash", "-c"],
+
+    "other": {
+      "mode": "assets",
+      "minify_json": true
+    }
+  }
+}
