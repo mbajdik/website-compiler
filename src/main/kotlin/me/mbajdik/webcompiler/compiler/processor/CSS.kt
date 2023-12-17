@@ -118,10 +118,11 @@ object CSS {
                                 task,
                                 ErrorMessage.MessageType.ERROR,
                                 "@import not used with url(...)",
-                                ErrorMessage.CodeSnippet(
+                                /*ErrorMessage.CodeSnippet(
                                     String(chars.slice(importStartIndex..i + 5).toCharArray()),
                                     i - importStartIndex
-                                )
+                                )*/
+                                ErrorMessage.CodeSnippet.fromCode(input, i)
                             )
                             inImport = false
                             output.append(importBackupBuilder)
@@ -134,10 +135,11 @@ object CSS {
                                 task,
                                 ErrorMessage.MessageType.ERROR,
                                 "@import url(...) pattern used without parentheses",
-                                ErrorMessage.CodeSnippet(
+                                /*ErrorMessage.CodeSnippet(
                                     String(chars.slice(importStartIndex..i + 5).toCharArray()),
                                     i - importStartIndex
-                                )
+                                )*/
+                                ErrorMessage.CodeSnippet.fromCode(input, i)
                             )
 
                             inImport = false

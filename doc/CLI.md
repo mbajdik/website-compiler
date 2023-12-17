@@ -2,12 +2,13 @@
 
 ## Main entrypoint
 ```
-Usage: wmake [make|build|compile] [SUBCOMMAND OPTIONS]
+Usage: wmake [make|build|new|create|compile] [SUBCOMMAND OPTIONS]
 
 DEFAULT SUBCOMMAND: make
 
 COMMANDS
     make, build:    Builds a wmake project
+    new, create:    Dumps the default configuration
     compile:        Compiles a single file
     help:           Displays this message
 ```

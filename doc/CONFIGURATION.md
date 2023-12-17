@@ -19,7 +19,7 @@ To be able to run this tool in a directory and compile it, you need to add a con
     
     "hooks": {
       "pre_build": [],
-      "pro_build": []
+      "post_build": []
     },
     "hook_runner": ["/bin/bash", "-c"],
     
@@ -51,7 +51,7 @@ The make configuration is responsible for specifying the files to compile or inc
 
 #### ```hooks```
  - ```pre_build``` Ran before starting the build
- - ```pro_build``` Ran after finishing the build
+ - ```post_build``` Ran after finishing the build
 #### ```hook_runner``` The command to prepend all hook commands with (e.g.: bash, zsh)
 
 <br>

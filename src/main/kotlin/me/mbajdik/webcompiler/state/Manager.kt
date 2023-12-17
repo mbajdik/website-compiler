@@ -69,6 +69,8 @@ class Manager constructor(
                 println(msg)
             }
         }
+
+        if (!ERROR_QUEUE.isEmpty()) println();
     }
 
     private fun panicError(message: ErrorMessage) {

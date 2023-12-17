@@ -13,7 +13,7 @@
 
     "hooks": {
       "pre_build": [],
-      "pro_build": []
+      "post_build": []
     },
     "hook_runner": ["/bin/bash", "-c"],
 

@@ -20,7 +20,6 @@
 package me.mbajdik.webcompiler.cli
 
 import com.google.gson.JsonParser
-import me.mbajdik.webcompiler.WMake
 import me.mbajdik.webcompiler.make.HookRunner
 import me.mbajdik.webcompiler.make.MakeConfig
 import me.mbajdik.webcompiler.make.MakeProcessor
@@ -185,7 +184,7 @@ object WMakeMake {
         }
 
         // Pro-build hooks
-        HookRunner.run(manager, config.hookRunner, config.proBuildHooks, HookRunner.HookType.PRO_BUILD);
+        HookRunner.run(manager, config.hookRunner, config.proBuildHooks, HookRunner.HookType.POST_BUILD);
 
         manager.exit(false);
     }

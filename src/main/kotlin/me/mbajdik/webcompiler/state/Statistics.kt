@@ -49,22 +49,34 @@ class Statistics {
     fun printStatistics(error: Boolean) {
         stop();
 
-        val exitStatus = if (error) ANSI.red("FAIL") else ANSI.green("SUCCESS");
+        val exitStatus =
+            if (error) getFancyMessage("FAIL", ANSI::red) else getFancyMessage("SUCCESS", ANSI::green)
 
         val warningsNum = getErrorOccurs(ErrorMessage.MessageType.WARNING, ANSI::yellow);
         val internalErrNum = getErrorOccurs(ErrorMessage.MessageType.INTERNAL_ERROR, ANSI::purple);
 
         val timeDeltaSecs = (END_TIME - START_TIME) / 1000.0
 
-        println("""
-                $exitStatus
-                
-                HTML files compiled: $HTML_COMPILED
-                Warnings: $warningsNum
-                Internal errors: $internalErrNum
-                
-                Time took: ${if (START_TIME == -1L) 0 else String.format("%.3f", timeDeltaSecs)}s
-            """.trimIndent())
+        val lines = listOf(
+            *exitStatus.toTypedArray(),
+            "",
+            "HTML files compiled: $HTML_COMPILED",
+            "Warnings: $warningsNum",
+            "Internal errors: $internalErrNum",
+            "",
+            "Time took: ${if (START_TIME == -1L) "not measured" else String.format("%.3f", timeDeltaSecs)}s"
+        )
+
+        println(lines.joinToString("\n"));
+    }
+
+    private fun getFancyMessage(msg: String, modifier: (String) -> String): List<String> {
+        val lines = listOf(
+            "┏${"━".repeat(msg.length)}┓",
+            "┃$msg┃",
+            "┗${"━".repeat(msg.length)}┛"
+        )
+        return lines.map(modifier);
     }
 
     private fun getErrorOccurs(type: ErrorMessage.MessageType, transform: (String) -> String): String {

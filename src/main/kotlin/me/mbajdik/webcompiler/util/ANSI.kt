@@ -28,6 +28,7 @@ object ANSI {
     private val PURPLE = "\u001B[35m"
     private val CYAN = "\u001B[36m"
     private val WHITE = "\u001B[37m"
+    private val GRAY = "\u001B[90m"
 
     private val RESET = "\u001B[0m"
 
@@ -40,4 +41,5 @@ object ANSI {
     fun purple(s: String): String = surround(PURPLE, s);
     fun cyan(s: String): String = surround(CYAN, s);
     fun white(s: String): String = surround(WHITE, s);
+    fun gray(s: String): String = surround(GRAY, s);
 }

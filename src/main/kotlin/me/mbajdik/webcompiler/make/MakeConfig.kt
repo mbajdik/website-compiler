@@ -66,7 +66,7 @@ class MakeConfig(json: JsonObject) {
 
         val jsonMakeHooks = JSONUtil.De.safeJsonObject(JSONUtil.De.safeObjectRoute(jsonMake, "hooks"));
         val jsonMakeHooksPreBuild = jsonMakeHooks?.get("pre_build");
-        val jsonMakeHooksProBuild = jsonMakeHooks?.get("pro_build");
+        val jsonMakeHooksProBuild = jsonMakeHooks?.get("post_build");
         val jsonMakeHookRunner = jsonMake?.get("hook_runner");
 
         this.hookRunner = JSONUtil.De.safeArray(jsonMakeHookRunner);

@@ -7,6 +7,7 @@ See the specific files for [configuration](doc/CONFIGURATION.md) and [CLI usage]
 ## Installation, dependencies
 ### If you don't want to compile
 You can use the pre-packaged ```.jar``` files found in the Releases page, or you can use the Linux compatible sh-banged (```#!/bin/java -jar```) executable
+#### <b>Please note that this project uses the Java version specified in the Maven config: ```17```</b>
 ### To compile
 The Maven build system is used to compile this project into ```.jar``` files with or without dependencies
 ### Dependencies

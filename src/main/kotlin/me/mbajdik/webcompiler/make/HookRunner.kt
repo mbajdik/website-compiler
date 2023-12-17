@@ -52,5 +52,5 @@ object HookRunner {
         }
     }
 
-    enum class HookType(val text: String) { PRE_BUILD("Pre-build"), PRO_BUILD("Pro-build") }
+    enum class HookType(val text: String) { PRE_BUILD("Pre-build"), POST_BUILD("Post-build") }
 }

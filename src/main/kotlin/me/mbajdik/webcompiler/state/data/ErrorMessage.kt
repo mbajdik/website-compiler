@@ -20,6 +20,8 @@
 package me.mbajdik.webcompiler.state.data
 
 import me.mbajdik.webcompiler.task.helpers.DebugInformationSupplier
+import me.mbajdik.webcompiler.util.ANSI
+import kotlin.text.StringBuilder
 
 data class ErrorMessage(
     val task: DebugInformationSupplier,
@@ -42,7 +44,7 @@ data class ErrorMessage(
 
         return "$typeText $message" + "\n" +
                 descLines.joinToString("\n") { s -> TAB + s } + "\n" +
-                (if (snippet == null) "" else "\n$TAB${snippet.code}\n$TAB${" ".repeat(snippet.errorIndex)}^");
+                (if (snippet == null) "" else "$snippet");
     }
 
     enum class MessageType(val colored: String, val loggable: String, val logLevel: Int) {
@@ -54,10 +56,82 @@ data class ErrorMessage(
 
     data class CodeSnippet(
         val code: String,
-        val errorIndex: Int
-    )
+        val errorIndex: Int,
+        val lineNum: Int? = null,
+        val columnNum: Int? = null,
+    ) {
+        override fun toString(): String {
+            val linePrefix = if (lineNum != null) ANSI.gray("$lineNum | ") else "";
+            val linePrefixLen = if (lineNum != null) "$lineNum | ".length else 0;
+
+            val lines = listOf(
+                linePrefix + code,
+                " ".repeat(errorIndex + linePrefixLen) + ANSI.gray("^${columnNum ?: ""}")
+            )
+
+            return lines.joinToString("\n");
+        }
+
+        companion object {
+            fun fromCode(code: String, globalIndex: Int): CodeSnippet {
+                var fromNewline = 1;
+                var lineNum = 1; // Not starting from 0, but from 1
+
+                val beforeBuf = StringBuilder(code[globalIndex].toString());
+                val afterBuf = StringBuilder()
+
+                var skip = 0;
+                for (i in globalIndex - 1 downTo 0) {
+                    if (skip > 0) {
+                        skip--;
+                        continue;
+                    }
+
+                    val c = code[i];
+                    val prev = if (i > 0) code[i - 1] else null;
+
+                    // LF
+                    if (c == '\n') {
+                        // CRLF
+                        if (prev == '\r') {
+                            lineNum++;
+                            skip += 1;
+                            continue;
+                        } else {
+                            lineNum++;
+                            continue;
+                        }
+                    }
+
+                    if (lineNum == 1) {
+                        if (c == '\u0009') {
+                            beforeBuf.append(TAB)
+                            fromNewline += 4;
+                        }
+
+                        beforeBuf.append(c);
+                        fromNewline++;
+                    }
+                }
+
+                afterLoop@ for (i in globalIndex + 1 until code.length) {
+                    val c = code[i];
+                    if (c == '\n' || c == '\r') break@afterLoop;
+                    afterBuf.append(c);
+                }
+
+                return CodeSnippet(
+                    code = beforeBuf.reverse().toString() + afterBuf.toString(),
+                    errorIndex = fromNewline - 1,
+                    lineNum = lineNum,
+                    columnNum = fromNewline
+                );
+            }
+        }
+    }
 
     companion object {
-        private val TAB = " ".repeat(4);
+        private const val TAB_SIZE = 4; // If you use anything else, just recompile
+        private val TAB = " ".repeat(TAB_SIZE);
     }
 }
