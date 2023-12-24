@@ -40,7 +40,7 @@ object EnvironmentUtilities {
 
         pathVar ?: return;
 
-        val pathDirs = pathVar.split(":");
+        val pathDirs = pathVar.split(File.pathSeparator);
         val cache = hashMapOf<String, String>()
 
         for (dir in pathDirs) {
