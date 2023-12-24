@@ -24,7 +24,7 @@ object TerminalUtils {
         var valid = false;
         var value = false;
         while (!valid) {
-            print("$prompt [${if (default) "Y/n" else "y/N"}]");
+            print("$prompt [${if (default) "Y/n" else "y/N"}] ");
             val userIn = readln();
 
             if (userIn.length < 2) {

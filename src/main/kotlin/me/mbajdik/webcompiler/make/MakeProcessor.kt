@@ -66,14 +66,14 @@ class MakeProcessor(
         val receiver = ConcurrentHashMap<List<String>, ByteArray>();
 
         fun processorThread(main: Boolean = false) {
-            while (!tasker.isEmpty()) {
-                if (!main) manager.pushThread(Thread.currentThread());
+            if (!main) manager.pushThread(Thread.currentThread());
 
+            while (!tasker.isEmpty()) {
                 val task = tasker.poll();
                 receiver[task.paths] = handleFile(task.paths, task.type);
-
-                if (!main) manager.popThread(Thread.currentThread());
             }
+
+            if (!main) manager.popThread(Thread.currentThread());
         }
 
         for (tasks in 0 until finalThreads - 1) {
@@ -88,6 +88,8 @@ class MakeProcessor(
         processorThread(main = true);
 
         while (receiver.keys.size != collected.size) {/*Wait*/} // Should have completed
+
+        manager.popThread(Thread.currentThread())
 
         return HashMap(receiver);
     }

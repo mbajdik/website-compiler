@@ -31,7 +31,7 @@ object CSS {
         var string = StringType.SINGLE_QUOTE;
 
         var inImport = false;
-        var importStartIndex = -1;
+        var importStartIndex = -1; // used in earlier versions, might need later
         var importFoundToken = false;
         var importInParentheses = false;
         var importFileBuilder = StringBuilder()
@@ -118,10 +118,6 @@ object CSS {
                                 task,
                                 ErrorMessage.MessageType.ERROR,
                                 "@import not used with url(...)",
-                                /*ErrorMessage.CodeSnippet(
-                                    String(chars.slice(importStartIndex..i + 5).toCharArray()),
-                                    i - importStartIndex
-                                )*/
                                 ErrorMessage.CodeSnippet.fromCode(input, i)
                             )
                             inImport = false
@@ -135,10 +131,6 @@ object CSS {
                                 task,
                                 ErrorMessage.MessageType.ERROR,
                                 "@import url(...) pattern used without parentheses",
-                                /*ErrorMessage.CodeSnippet(
-                                    String(chars.slice(importStartIndex..i + 5).toCharArray()),
-                                    i - importStartIndex
-                                )*/
                                 ErrorMessage.CodeSnippet.fromCode(input, i)
                             )
 

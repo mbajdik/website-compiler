@@ -25,6 +25,7 @@ import me.mbajdik.webcompiler.state.Manager
 import me.mbajdik.webcompiler.task.helpers.WebLocalFileHandler
 import me.mbajdik.webcompiler.task.tasks.HTMLProcessTask
 import me.mbajdik.webcompiler.util.FileUtilities
+import me.mbajdik.webcompiler.util.TerminalUtils
 import org.apache.commons.cli.*
 import java.io.File
 import kotlin.system.exitProcess
@@ -91,7 +92,7 @@ object WMakeCompile {
 
         val parser = DefaultParser();
         val parsed = try { parser.parse(options, args)!! } catch (e: ParseException) { null }
-        val file = if (parsed != null && parsed.argList.size > 0) parsed.argList[0] else null;
+        val file = if (parsed != null && parsed.argList.size > 0) File(parsed.argList[0]) else null;
 
         // printing (error)+help message
         if (parsed == null || file == null || parsed.hasOption(optionHelp)) {
@@ -111,11 +112,11 @@ object WMakeCompile {
 
         val rootDir =
             if (parsed.hasOption(optionRoot))
-                parsed.getOptionValue(optionRoot)
+                File(parsed.getOptionValue(optionRoot))
             else
-                System.getProperty("user.dir")
+                askUnspecifiedRoot(freeSTDOUT, file)
 
-        val handler = WebLocalFileHandler.local(rootDir, file);
+        val handler = WebLocalFileHandler.local(rootDir.toString(), rootDir.toURI().relativize(file.toURI()).path);
         val task = HTMLProcessTask(manager, handler);
         val minifyOpts =
             if (parsed.hasOption(optionOptions))
@@ -143,5 +144,17 @@ object WMakeCompile {
         }
 
         manager.exit(false);
+    }
+
+    fun askUnspecifiedRoot(freeSTDOUT: Boolean, file: File): File {
+        return if (freeSTDOUT && file.parentFile != null) {
+            if (TerminalUtils.yesOrNo(true, "No root directory was given, set the root to ${file.parent}?")) {
+                file.parentFile
+            } else {
+                File(".")
+            }
+        } else {
+            File(".")
+        }
     }
 }

@@ -20,12 +20,14 @@
 package me.mbajdik.webcompiler.util
 
 import java.io.File
+import java.util.*
+import kotlin.collections.HashMap
 
 object EnvironmentUtilities {
     private var PATH_CACHE: HashMap<String, String>? = null;
 
 
-    fun getFullPath(exec: String): String? {
+    fun getFullExecutablePath(exec: String): String? {
         if (PATH_CACHE == null) walkPath();
 
         return PATH_CACHE!![exec];
@@ -33,7 +35,12 @@ object EnvironmentUtilities {
 
 
     private fun walkPath() {
-        val pathDirs = System.getenv("PATH").split(":");
+        val osName = System.getProperty("os.name").lowercase(Locale.getDefault());
+        val pathVar = if (osName.contains("windows")) System.getenv("Path") else System.getenv("PATH");
+
+        pathVar ?: return;
+
+        val pathDirs = pathVar.split(":");
         val cache = hashMapOf<String, String>()
 
         for (dir in pathDirs) {

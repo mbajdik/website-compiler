@@ -36,21 +36,7 @@ object FileUtilities {
                 }
             } else if (file.isFile) {
                 if (freeSTDOUT) {
-                    var valid = false;
-                    var replace = false;
-                    while (!valid) {
-                        print("File already exists ($file), replace? [y/N]");
-                        val userIn = readln();
-
-                        if (userIn.length < 2) {
-                            when (userIn) {
-                                "y", "Y" -> {valid = true; replace = true};
-                                "n", "N", "" -> {valid = true; replace = false};
-                            }
-                        }
-                    }
-
-                    if (replace) {
+                    if (TerminalUtils.yesOrNo(true, "File already exists ($file), replace?")) {
                         tryWriteToFile(file, bytes, true);
                     } else {
                         println("Skipped saving to file ($file)")
