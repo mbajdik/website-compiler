@@ -21,19 +21,19 @@ package me.mbajdik.webcompiler.task.tasks
 
 import me.mbajdik.webcompiler.state.Manager
 import me.mbajdik.webcompiler.task.helpers.WebLocalFileHandler
+import me.mbajdik.webcompiler.util.SegmentedPath
 
 class JavascriptProcessTask constructor(
     val manager: Manager,
     val handler: WebLocalFileHandler
 ): CompileTask(manager, handler) {
-    private var contents: String? = null;
+    init {
+        if (handler.isLocal()) manager.setSeenSite(SegmentedPath.explode(handler.path()))
+    }
 
     override fun subtask(path: String): JavascriptProcessTask = JavascriptProcessTask(manager, handler.fileRelative(path));
     override fun getTaskTypeName(): String = "JS import"
 
 
-    fun process(): String {
-        if (contents == null) contents = handler.fileContentsString(manager);
-        return contents!!;
-    }
+    fun process(): String = handler.fileContentsString(manager);
 }

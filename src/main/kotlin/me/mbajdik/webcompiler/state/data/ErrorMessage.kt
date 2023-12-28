@@ -61,8 +61,8 @@ data class ErrorMessage(
         val columnNum: Int? = null,
     ) {
         override fun toString(): String {
-            val linePrefix = if (lineNum != null) ANSI.gray("$lineNum | ") else "";
-            val linePrefixLen = if (lineNum != null) "$lineNum | ".length else 0;
+            val linePrefix = if (lineNum != null) ANSI.gray("$lineNum | ") else ANSI.gray(" | ");
+            val linePrefixLen = if (lineNum != null) "$lineNum | ".length else 3;
 
             val lines = listOf(
                 linePrefix + code,

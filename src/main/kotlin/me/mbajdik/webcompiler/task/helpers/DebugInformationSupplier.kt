@@ -25,7 +25,9 @@ interface DebugInformationSupplier {
 
     companion object {
         fun supplierToString(supplier: DebugInformationSupplier): String {
-            return "${supplier.getTaskTypeName()} [${supplier.getDisplayPath()}]"
+            val displayPath = supplier.getDisplayPath();
+
+            return supplier.getTaskTypeName() + (if (displayPath.isNotEmpty()) " [${displayPath}]" else "")
         }
     }
 

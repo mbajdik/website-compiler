@@ -35,7 +35,7 @@ object WMakeDumpConfig {
 
         val file = File(location, "wmake.json")
 
-        if (file.exists() && !TerminalUtils.yesOrNo(false, "There's already a wmake project here, replace it?")) {
+        if (file.exists() && !TerminalUtils.yesOrNo(false, "There's already a project here, replace it?")) {
             exitProcess(0);
         }
 

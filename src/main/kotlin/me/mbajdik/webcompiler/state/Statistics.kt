@@ -60,21 +60,22 @@ class Statistics {
         val lines = listOf(
             *exitStatus.toTypedArray(),
             "",
-            "HTML files compiled: $HTML_COMPILED",
+            //"HTML files compiled: $HTML_COMPILED",
             "Warnings: $warningsNum",
             "Internal errors: $internalErrNum",
             "",
-            "Time took: ${if (START_TIME == -1L) "not measured" else String.format("%.3f", timeDeltaSecs)}s"
+            "Time took: ${if (START_TIME == -1L) "not measured" else String.format("%.3f", timeDeltaSecs) + "s"}"
         )
 
         println(lines.joinToString("\n"));
     }
 
     private fun getFancyMessage(msg: String, modifier: (String) -> String): List<String> {
+        val margin = 2;
         val lines = listOf(
-            "┏${"━".repeat(msg.length)}┓",
-            "┃$msg┃",
-            "┗${"━".repeat(msg.length)}┛"
+            "┏${"━".repeat(msg.length + margin * 2)}┓",
+            "┃${space(margin)}$msg${space(margin)}┃",
+            "┗${"━".repeat(msg.length + margin * 2)}┛"
         )
         return lines.map(modifier);
     }
@@ -82,5 +83,9 @@ class Statistics {
     private fun getErrorOccurs(type: ErrorMessage.MessageType, transform: (String) -> String): String {
         if (!ERROR_TYPES_COUNT.containsKey(type) || ERROR_TYPES_COUNT[type] == 0) return ANSI.green("0");
         return transform(""+ERROR_TYPES_COUNT[type]);
+    }
+
+    companion object {
+        fun space(n: Int): String = " ".repeat(n);
     }
 }

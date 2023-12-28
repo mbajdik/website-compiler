@@ -29,12 +29,20 @@ class MinifyTask(
     private val displayPath: String,
     val unminified: String,
     val options: List<String>,
+    val nodePath: String?,
+    val minifierPath: String?,
 ): Task() {
     private var minified: String? = null;
 
     // Alternate - just for fun
-    constructor(manager: Manager, handler: WebLocalFileHandler, unminified: String, options: List<String>)
-            : this(manager, handler.getDisplayPath(), unminified, options)
+    constructor(
+        manager: Manager,
+        handler: WebLocalFileHandler,
+        unminified: String,
+        options: List<String>,
+        nodePath: String? = null,
+        minifierPath: String? = null
+    ) : this(manager, handler.getDisplayPath(), unminified, options, nodePath, minifierPath)
 
     override fun getDisplayPath(): String = displayPath;
     override fun getTaskTypeName(): String = "HTML minify"

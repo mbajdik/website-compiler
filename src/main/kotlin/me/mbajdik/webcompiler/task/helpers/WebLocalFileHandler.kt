@@ -21,10 +21,9 @@ package me.mbajdik.webcompiler.task.helpers
 
 import me.mbajdik.webcompiler.state.Manager
 import me.mbajdik.webcompiler.state.data.ErrorMessage
-import me.mbajdik.webcompiler.util.PathUtilities
+import me.mbajdik.webcompiler.util.URIUtilities
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileNotFoundException
 import java.io.IOException
 import java.net.MalformedURLException
 import java.net.URI
@@ -42,14 +41,18 @@ class WebLocalFileHandler private constructor(
     }
 
     fun fileBytes(manager: Manager): ByteArray {
+        // Check if cached
+        val cached = manager.readCached(this);
+        if (cached != null) return cached;
+
         // Supported protocol(s): HTTP, HTTPS
         if (baseURI != null) {
-            val fullURI = PathUtilities.uriWithPath(baseURI, path);
+            val fullURI = URIUtilities.uriWithPath(baseURI, path);
             when (baseURI.scheme) {
                 "http", "https" -> {
                     val bos = ByteArrayOutputStream()
                     // try with HTTP if HTTPS is used
-                    val uri = PathUtilities.uriWithScheme(fullURI, "http");
+                    val uri = URIUtilities.uriWithScheme(fullURI, "http");
 
                     try {
                         val url = uri.toURL()
@@ -91,6 +94,7 @@ class WebLocalFileHandler private constructor(
             }
         } else {
             val filepath = getLocalPath();
+
             return try {
                 Files.readAllBytes(filepath);
             } catch (e: NoSuchFileException) {
@@ -123,19 +127,20 @@ class WebLocalFileHandler private constructor(
         return String(fileBytes(manager))
     }
 
-
     fun fileRelative(newPath: String): WebLocalFileHandler {
         val newURI = URI(newPath);
 
         // Check if anything of significance changed
         return if
             // Scenario 1: already a remote location, the authority changed
-           ((baseURI != null && !PathUtilities.uriPathlessEquals(baseURI, newURI) && !PathUtilities.onlyPathURI(newURI)) ||
+            ((baseURI != null && !URIUtilities.uriPathlessEquals(baseURI, newURI)
+                    && !URIUtilities.onlyPathURI(newURI)) ||
+
             // Scenario 2: local location, a remote location is needed
             (baseURI == null && !(newURI.scheme == null || newURI.scheme == "")))
         {
             WebLocalFileHandler(
-                PathUtilities.pathlessURI(newURI),
+                URIUtilities.pathlessURI(newURI),
                 null,
                 newURI.path
             );
@@ -144,13 +149,16 @@ class WebLocalFileHandler private constructor(
             WebLocalFileHandler(
                 baseURI,
                 absoluteRootPath,
-                PathUtilities.joinPaths(path, newURI.path)
+                joinRootBasedPaths(path, newURI.path)
             );
         }
     }
 
-    override fun getDisplayPath(): String = if (baseURI == null) path else PathUtilities.uriWithPath(baseURI, path).toString()
+    override fun getDisplayPath(): String = if (baseURI == null) path else URIUtilities.uriWithPath(baseURI, path).toString()
     override fun getTaskTypeName(): String = "File handler";
+
+    fun isLocal(): Boolean = baseURI == null;
+    fun path(): String = path;
 
     companion object {
         fun local(root: String, path: String): WebLocalFileHandler {
@@ -159,7 +167,14 @@ class WebLocalFileHandler private constructor(
 
         fun remote(uriString: String): WebLocalFileHandler {
             val uri = URI(uriString);
-            return WebLocalFileHandler(PathUtilities.pathlessURI(uri), null, uri.path);
+            return WebLocalFileHandler(URIUtilities.pathlessURI(uri), null, uri.path);
+        }
+
+        private fun joinRootBasedPaths(current: String, new: String): String {
+            return if (new.startsWith("/"))
+                new
+            else
+                File(if (current.endsWith("/")) current else File(current).parent, new).toString();
         }
     }
 }

@@ -22,19 +22,19 @@ package me.mbajdik.webcompiler.task.tasks
 import me.mbajdik.webcompiler.compiler.processor.CSS
 import me.mbajdik.webcompiler.state.Manager
 import me.mbajdik.webcompiler.task.helpers.WebLocalFileHandler
+import me.mbajdik.webcompiler.util.SegmentedPath
 
 class CSSProcessTask constructor(
     val manager: Manager,
     val handler: WebLocalFileHandler
 ): CompileTask(manager, handler) {
-    private var processed: CSS.CompilerOutput? = null;
+    init {
+        if (handler.isLocal()) manager.setSeenSite(SegmentedPath.explode(handler.path()))
+    }
 
     override fun subtask(path: String): CSSProcessTask = CSSProcessTask(manager, handler.fileRelative(path));
     override fun getTaskTypeName(): String = "CSS compile"
 
 
-    fun process(): CSS.CompilerOutput {
-        if (processed == null) processed = CSS.process(this);
-        return processed!!;
-    }
+    fun process(): CSS.CompilerOutput = CSS.process(this);
 }

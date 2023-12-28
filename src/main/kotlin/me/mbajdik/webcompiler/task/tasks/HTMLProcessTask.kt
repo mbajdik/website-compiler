@@ -24,29 +24,28 @@ import me.mbajdik.webcompiler.compiler.minifier.HTMLMinifierCompat
 import me.mbajdik.webcompiler.compiler.processor.HTML
 import me.mbajdik.webcompiler.state.Manager
 import me.mbajdik.webcompiler.task.helpers.WebLocalFileHandler
+import me.mbajdik.webcompiler.util.SegmentedPath
 
 class HTMLProcessTask constructor(
     val manager: Manager,
     val handler: WebLocalFileHandler
 ): CompileTask(manager, handler) {
-    private var processed: String? = null;
-    private var minified: String? = null;
+    init {
+        if (handler.isLocal()) manager.setSeenSite(SegmentedPath.explode(handler.path()))
+    }
 
     override fun subtask(path: String): HTMLProcessTask = HTMLProcessTask(manager, handler.fileRelative(path))
     override fun getTaskTypeName(): String = "HTML compile"
 
 
     fun process(): String {
-        if (processed == null) {
-            processed = HTML.process(this)
-            manager.statistics.HTML_COMPILED.incrementAndGet();
-        };
-        return processed!!;
+        manager.statistics.HTML_COMPILED.incrementAndGet()
+
+        return HTML.process(this);
     }
 
-    fun minify(options: List<String>): String {
-        if (processed == null) process();
-        if (minified == null) minified = HTMLMinifierCompat.minifyHTML(MinifyTask(manager, handler, processed!!, options));
-        return minified!!;
+    fun minifiedProcess(options: List<String>, nodePath: String? = null, minifierPath: String? = null): String {
+        val task = MinifyTask(manager, handler, process(), options, nodePath, minifierPath)
+        return HTMLMinifierCompat.minifyHTML(task)
     }
 }

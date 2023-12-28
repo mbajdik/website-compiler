@@ -21,15 +21,21 @@ package me.mbajdik.webcompiler.make
 
 import com.google.gson.JsonObject
 import me.mbajdik.webcompiler.util.JSONUtil
-import me.mbajdik.webcompiler.util.PathUtilities
+import me.mbajdik.webcompiler.util.URIUtilities
+import me.mbajdik.webcompiler.util.SegmentedPath
 import java.util.Collections
 
 class MakeConfig(json: JsonObject) {
+    val nodePath: String?;
+    val minifierPath: String?;
     val minifyHTML: Boolean;
     val minifierOptions: List<String>;
 
+    val root: String?;
+    val outputType: OutputType;
+    val output: String?;
     val mode: Mode;
-    val manualFiles: List<List<String>>;
+    val manualFiles: List<SegmentedPath>;
     val ignoreHidden: Boolean;
     val threads: Int;
 
@@ -38,25 +44,35 @@ class MakeConfig(json: JsonObject) {
     val proBuildHooks: List<List<String>>;
 
     val otherMode: OtherMode;
-    val otherManualFiles: List<List<String>>;
+    val otherManualFiles: List<SegmentedPath>;
     val otherManualMode: OtherManualMode;
     val otherMinifyJSON: Boolean;
 
     init {
         val jsonMinifier = JSONUtil.De.safeJsonObject(JSONUtil.De.safeObjectRoute(json, "minifier"));
         val jsonMinifierOptions = jsonMinifier?.get("options");
+        val jsonMinifierNodePath = jsonMinifier?.get("node_path");
+        val jsonMinifierMinifierPath = jsonMinifier?.get("minifier_path");
 
         this.minifyHTML = JSONUtil.De.isSafeArray(jsonMinifierOptions);
         this.minifierOptions = if (minifyHTML) JSONUtil.De.safeArray(jsonMinifierOptions) else emptyList()
+        this.nodePath = userRelativePath(JSONUtil.De.safeString(jsonMinifierNodePath));
+        this.minifierPath = userRelativePath(JSONUtil.De.safeString(jsonMinifierMinifierPath));
 
 
 
         val jsonMake = JSONUtil.De.safeJsonObject(JSONUtil.De.safeObjectRoute(json, "make"));
+        val jsonRoot = jsonMake?.get("root");
+        val jsonOutputType = jsonMake?.get("output_type");
+        val jsonOutput = jsonMake?.get("output");
         val jsonMakeMode = jsonMake?.get("mode");
         val jsonMakeManual = jsonMake?.get("manual");
         val jsonMakeIgnoreHidden = jsonMake?.get("ignore_hidden");
         val jsonMakeThreads = jsonMake?.get("threads");
 
+        this.root = JSONUtil.De.safeString(jsonRoot);
+        this.outputType = JSONUtil.De.safeEnum(jsonOutputType, OutputType.DIR);
+        this.output = JSONUtil.De.safeString(jsonOutput);
         this.mode = JSONUtil.De.safeEnum(jsonMakeMode, Mode.ROOT_ONLY);
         this.manualFiles = processPathList(JSONUtil.De.safeArray(jsonMakeManual));
         this.ignoreHidden = JSONUtil.De.safeBoolean(jsonMakeIgnoreHidden, true);
@@ -87,19 +103,36 @@ class MakeConfig(json: JsonObject) {
         this.otherMinifyJSON = JSONUtil.De.safeBoolean(jsonMakeOtherMinifyJSON, true);
     }
 
+    fun unusedMode(): Boolean {
+        val baseUnused = otherMode == OtherMode.UNUSED_SITE
+        val baseManual = otherMode == OtherMode.MANUAL
+        val manualUnused = otherManualMode == OtherManualMode.UNUSED_SITE
+
+        return baseUnused || (baseManual && manualUnused);
+    }
+
+    enum class OutputType { DIR, ZIP }
     enum class Mode { TRAVERSE, ROOT_ONLY, MANUAL }
-    enum class OtherMode { ALL, NO_SITE, ASSETS, MANUAL, NONE }
-    enum class OtherManualMode { ALL, NO_SITE, ASSETS }
+    enum class OtherMode { ALL, UNUSED_SITE, NO_SITE, ASSETS, MANUAL, NONE }
+    enum class OtherManualMode { ALL, UNUSED_SITE, NO_SITE, ASSETS }
 
     companion object {
-        fun processPathList(fulls: List<String>): List<List<String>> {
-            val out = mutableListOf<List<String>>()
+        fun processPathList(fulls: List<String>): List<SegmentedPath> {
+            val out = mutableListOf<SegmentedPath>()
 
             for (full in fulls) {
-                out.add(PathUtilities.pathToList(full));
+                out.add(SegmentedPath.explode(full));
             }
 
             return Collections.unmodifiableList(out);
+        }
+
+        fun userRelativePath(path: String?): String? {
+            if (path == null) return null;
+
+            return if (path.startsWith("~"))
+                "${System.getProperty("user.home")}${path.substring(1)}"
+            else path
         }
     }
 }

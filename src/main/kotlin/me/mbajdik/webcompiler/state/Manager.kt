@@ -22,6 +22,11 @@ package me.mbajdik.webcompiler.state
 import me.mbajdik.webcompiler.state.data.ErrorMessage
 import me.mbajdik.webcompiler.state.data.PanicCallback
 import me.mbajdik.webcompiler.task.helpers.DebugInformationSupplier
+import me.mbajdik.webcompiler.task.helpers.WebLocalFileHandler
+import me.mbajdik.webcompiler.util.SegmentedPath
+import java.io.PrintWriter
+import java.io.StringWriter
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.exitProcess
@@ -31,15 +36,17 @@ class Manager constructor(
     val statistics: Statistics = Statistics(),
 
     val freeSTDOUT: Boolean = true,
+    val quiet: Boolean = true,
     val cli: Boolean = true,
 
     private val panicActive: AtomicInteger = AtomicInteger(0),
     private val panicCallbacks: MutableList<PanicCallback> = mutableListOf(),
 
-    private val usedThreads: MutableList<Thread> = mutableListOf()
+    private val errorQueue: ConcurrentLinkedQueue<ErrorMessage> = ConcurrentLinkedQueue(),
+    private val usedThreads: ConcurrentHashMap<Thread, Unit> = ConcurrentHashMap(),
+    private val cachedFiles: ConcurrentHashMap<WebLocalFileHandler, ByteArray> = ConcurrentHashMap(),
+    private val seenSiteFiles: ConcurrentHashMap<SegmentedPath, Unit> = ConcurrentHashMap()
 ) {
-    private val ERROR_QUEUE = ConcurrentLinkedQueue<ErrorMessage>();
-
     fun pushErrorMessage(
         task: DebugInformationSupplier,
         type: ErrorMessage.MessageType = ErrorMessage.MessageType.WARNING,
@@ -51,7 +58,7 @@ class Manager constructor(
     ) {
         val msg = ErrorMessage(task, type, message, snippet, description, exception);
 
-        ERROR_QUEUE.add(msg)
+        errorQueue.add(msg)
         statistics.ERROR_TYPES_COUNT.putIfAbsent(type, 0)
         statistics.ERROR_TYPES_COUNT[type] = (statistics.ERROR_TYPES_COUNT[type] ?: 0) + 1;
         logger.logErrorMessage(msg)
@@ -59,25 +66,39 @@ class Manager constructor(
         if (exit || type == ErrorMessage.MessageType.ERROR) panicError(msg);
     }
 
-    private fun printErrorQueue() {
-        for (message in ERROR_QUEUE) {
+    private fun stringifyErrorQueue(): String {
+        val stringWriter = StringWriter();
+        val writer = PrintWriter(stringWriter);
+
+        for (message in errorQueue) {
             val msg = message.toString(true);
 
-            if (!freeSTDOUT) {
-                System.err.println(msg)
-            } else {
-                println(msg)
-            }
+            writer.println(msg);
         }
 
-        if (!ERROR_QUEUE.isEmpty()) println();
+        return stringWriter.buffer.toString()
+    }
+
+    private fun printErrorQueue() {
+        val queue = stringifyErrorQueue();
+
+        if (!freeSTDOUT) {
+            System.err.print(queue)
+        } else {
+            print(queue)
+        }
+
+        if (!errorQueue.isEmpty()) println();
     }
 
     private fun panicError(message: ErrorMessage) {
-        if (panicActive.incrementAndGet() > 1) return; // Two threads were killing each other
+        // Two threads were killing each other
+        if (panicActive.incrementAndGet() > 1) {
+            while (true) {/*Hang thread*/}
+        }
 
         // Stopping all threads - in this case it's NOT THAT dangerous
-        for (thread in usedThreads) {
+        for (thread in usedThreads.keys()) {
             if (thread != Thread.currentThread() && thread.isAlive) {
                 thread.stop();
             }
@@ -90,8 +111,6 @@ class Manager constructor(
     fun addPanicCallback(cb: PanicCallback) = panicCallbacks.add(cb);
 
 
-
-
     fun init() {
         statistics.start();
     }
@@ -101,15 +120,24 @@ class Manager constructor(
         logger.write();
 
         if (cli) {
-            printErrorQueue()
-            if (freeSTDOUT) statistics.printStatistics(error)
+            if (error || !quiet) {
+                printErrorQueue()
+                if (freeSTDOUT) statistics.printStatistics(error)
+            }
 
             exitProcess(if (error) 1 else 0)
         }
     }
 
 
+    fun cacheFile(file: WebLocalFileHandler, contents: ByteArray) = cachedFiles.put(file, contents);
+    fun readCached(file: WebLocalFileHandler): ByteArray? = cachedFiles[file];
 
-    fun pushThread(thread: Thread) = usedThreads.add(thread);
+
+    fun pushThread(thread: Thread) = usedThreads.put(thread, Unit);
     fun popThread(thread: Thread) = usedThreads.remove(thread);
+
+
+    fun setSeenSite(path: SegmentedPath) = seenSiteFiles.put(path, Unit);
+    fun getSeenSite(path: SegmentedPath): Boolean = seenSiteFiles.containsKey(path);
 }

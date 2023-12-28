@@ -115,10 +115,10 @@ object CSS {
                             skip = 2
                         } else {
                             task.manager.pushErrorMessage(
-                                task,
-                                ErrorMessage.MessageType.ERROR,
-                                "@import not used with url(...)",
-                                ErrorMessage.CodeSnippet.fromCode(input, i)
+                                task = task,
+                                type = ErrorMessage.MessageType.ERROR,
+                                message = "@import not used with url(...)",
+                                snippet = ErrorMessage.CodeSnippet.fromCode(input, i)
                             )
                             inImport = false
                             output.append(importBackupBuilder)
@@ -128,10 +128,10 @@ object CSS {
                     if (importFoundToken) {
                         if (!importInParentheses && !(c == '(' || Character.isWhitespace(c))) {
                             task.manager.pushErrorMessage(
-                                task,
-                                ErrorMessage.MessageType.ERROR,
-                                "@import url(...) pattern used without parentheses",
-                                ErrorMessage.CodeSnippet.fromCode(input, i)
+                                task = task,
+                                type = ErrorMessage.MessageType.ERROR,
+                                message = "@import url(...) pattern used without parentheses",
+                                snippet = ErrorMessage.CodeSnippet.fromCode(input, i)
                             )
 
                             inImport = false

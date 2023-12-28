@@ -30,7 +30,7 @@ import java.io.StringWriter
  *      0 -> only (internal) errors
  *      1 -> all kinds of warnings, except information
  *      2 -> all messages
- *      3 -> during-execution logging -- TODO - later
+ *      3 -> during-execution logging
  */
 class Logger constructor(
     private val logLevel: Int = LogLevel.INFORMATION.ordinal,

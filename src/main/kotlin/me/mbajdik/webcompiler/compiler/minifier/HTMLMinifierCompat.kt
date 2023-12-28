@@ -27,8 +27,8 @@ object HTMLMinifierCompat {
     val DEFAULT_OPTIONS = listOf("--collapse-whitespace", "--minify-css", "--minify-js")
 
     fun minifyHTML(task: MinifyTask): String {
-        val probableNodePath = EnvironmentUtilities.getFullExecutablePath("node")
-        val probableScriptPath = EnvironmentUtilities.getFullExecutablePath("html-minifier");
+        val probableNodePath = EnvironmentUtilities.getFullExecutablePath("node") ?: task.nodePath
+        val probableScriptPath = EnvironmentUtilities.getFullExecutablePath("html-minifier") ?: task.minifierPath;
 
         if (probableNodePath == null) createNotInPathError(task, "node");
         if (probableScriptPath == null) createNotInPathError(task, "html-minifier");
@@ -47,11 +47,10 @@ object HTMLMinifierCompat {
         val errorBytes = process.errorStream.readAllBytes()
         if (errorBytes.isNotEmpty()) {
             task.manager.pushErrorMessage(
-                task,
-                ErrorMessage.MessageType.ERROR,
-                "couldn't minify HTML",
-                null,
-                listOf(String(errorBytes))
+                task = task,
+                type = ErrorMessage.MessageType.ERROR,
+                message = "couldn't minify HTML",
+                description = listOf(String(errorBytes))
             )
         }
 
@@ -60,11 +59,10 @@ object HTMLMinifierCompat {
 
     private fun createNotInPathError(task: MinifyTask, bin: String) {
         task.manager.pushErrorMessage(
-            task,
-            ErrorMessage.MessageType.ERROR,
-            "Couldn't find a required executable in PATH",
-            null,
-            listOf("Binary: $bin")
+            task = task,
+            type = ErrorMessage.MessageType.ERROR,
+            message = "Couldn't find a required executable in PATH",
+            description = listOf("Binary: $bin")
         )
     }
 }

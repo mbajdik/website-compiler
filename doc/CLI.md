@@ -8,7 +8,7 @@ DEFAULT SUBCOMMAND: make
 
 COMMANDS
     make, build:    Builds a wmake project
-    new, create:    Dumps the default configuration
+    new, create:    Dumps the default configuration - usage: "wmake new [location?]"
     compile:        Compiles a single file
     help:           Displays this message
 ```
@@ -32,8 +32,10 @@ usage: wmake make [OPTIONS...] [LOCATION]
  -l,--loglevel <arg>   Specify the log level (e.g.: for errors only: 0)
     --logfile <arg>    The file to save the log to, otherwise
                        ([root]/.wmake/logs/[date].log
+    --no-log           Fully disables logging
  -o,--save-dir <arg>   The directory to save the output to, if not in
                        wmake.json (otherwise in [root]/.target/)
+ -q,--quiet            Will not output anything unless an error occurs
  -r,--root <arg>       The project root, wmake.json is used by default (or
                        the CWD if it's not supplied)
  -z,--zip <arg>        The zip file to save the output to, otherwise saved

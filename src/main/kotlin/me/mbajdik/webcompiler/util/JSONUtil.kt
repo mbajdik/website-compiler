@@ -50,6 +50,10 @@ object JSONUtil {
             return if (elem != null && elem is JsonPrimitive && elem.isNumber) elem.asInt else default;
         }
 
+        fun safeString(elem: JsonElement?): String? {
+            return if (elem != null && elem is JsonPrimitive && elem.isString) elem.asString else null;
+        }
+
         fun safeArray(elem: JsonElement?): List<String> {
             return if (elem != null && elem.isJsonArray) arrayToStringList(elem.asJsonArray) else emptyList();
         }

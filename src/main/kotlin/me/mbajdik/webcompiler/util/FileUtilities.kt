@@ -24,8 +24,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 object FileUtilities {
-    fun writeToFileSafe(bytes: ByteArray, file: File, freeSTDOUT: Boolean = false) {
-        if (file.exists()) {
+    fun writeToFileSafe(bytes: ByteArray, file: File, freeSTDOUT: Boolean = false, force: Boolean = false) {
+        if (file.exists() && !force) {
             if (file.isDirectory) {
                 val msg = "Output file is a directory: $file";
 
@@ -46,6 +46,7 @@ object FileUtilities {
                 }
             }
         } else {
+            if (force && file.exists()) file.delete();
             tryWriteToFile(file, bytes, freeSTDOUT);
         }
     }

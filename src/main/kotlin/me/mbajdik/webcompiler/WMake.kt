@@ -32,11 +32,11 @@ object WMake {
     private val HELP_MESSAGE = """
         Usage: wmake [make|build|new|create|compile] [SUBCOMMAND OPTIONS]
         
-        DEFAULT SUBCOMMAND: make
+        DEFAULT SUBCOMMAND: make (automatically executed if in a project)
         
         COMMANDS
             make, build:    Builds a wmake project
-            new, create:    Dumps the default configuration
+            new, create:    Dumps the default configuration - usage: "wmake new [location?]"
             compile:        Compiles a single file
             help:           Displays this message
     """.trimIndent()
@@ -44,8 +44,10 @@ object WMake {
     @JvmStatic
     fun main(args: Array<String>) {
         if (args.isEmpty()) {
-            if (File("wmake.json").exists()) {
-                WMakeMake.command(emptyArray())
+            val projectRoot = WMakeMake.findParentProject(File("."))?.toString();
+
+            if (projectRoot != null && File(projectRoot, "wmake.json").exists()) {
+                WMakeMake.command(emptyArray(), projectRoot);
             } else {
                 printHelp("No command was given and not in a wmake project, use \"wmake new\" to create a new project")
             }

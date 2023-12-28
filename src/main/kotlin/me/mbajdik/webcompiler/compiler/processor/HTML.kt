@@ -61,13 +61,11 @@ object HTML {
                 if (node.attributes().hasKey("src")) {
                     if (node.attributes().hasKey("type") && node.attributes().get("type") == "module") {
                         task.manager.pushErrorMessage(
-                            task,
-                            ErrorMessage.MessageType.INTERNAL_ERROR,
-                            "JavaScript modules are unsupported (inconsistent)",
-                            ErrorMessage.CodeSnippet("type=\"module\"", 6), // a bit artificial
-                            null,
-                            null,
-                            false
+                            task = task,
+                            type = ErrorMessage.MessageType.INTERNAL_ERROR,
+                            message = "JavaScript modules are unsupported (import inconsistency)",
+                            snippet = ErrorMessage.CodeSnippet("type=\"module\"", 6), // a bit artificial
+                            exit = false
                         );
                     }
 

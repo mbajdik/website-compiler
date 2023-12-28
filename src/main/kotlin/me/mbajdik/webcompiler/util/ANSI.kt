@@ -20,17 +20,17 @@
 package me.mbajdik.webcompiler.util
 
 object ANSI {
-    private val BLACK = "\u001B[30m"
-    private val RED = "\u001B[31m"
-    private val GREEN = "\u001B[32m"
-    private val YELLOW = "\u001B[33m"
-    private val BLUE = "\u001B[34m"
-    private val PURPLE = "\u001B[35m"
-    private val CYAN = "\u001B[36m"
-    private val WHITE = "\u001B[37m"
-    private val GRAY = "\u001B[90m"
+    val BLACK = "\u001B[30m"
+    val RED = "\u001B[31m"
+    val GREEN = "\u001B[32m"
+    val YELLOW = "\u001B[33m"
+    val BLUE = "\u001B[34m"
+    val PURPLE = "\u001B[35m"
+    val CYAN = "\u001B[36m"
+    val WHITE = "\u001B[37m"
+    val GRAY = "\u001B[90m"
 
-    private val RESET = "\u001B[0m"
+    val RESET = "\u001B[0m"
 
     private fun surround(code: String, s: String): String = "$code$s$RESET"
     fun black(s: String): String = surround(BLACK, s);

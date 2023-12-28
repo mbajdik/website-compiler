@@ -9,9 +9,14 @@ To be able to run this tool in a directory and compile it, you need to add a con
       "--minify-js",
       "--minify-css",
       "--collapse-whitespace"
-    ]
+    ],
+    "node_path": "/bin/node"
   },
   "make": {
+    "root": "src",
+    "output_type": "dir",
+    "output": "build",
+    
     "mode": "manual",
     "manual": ["index.html"],
     "ignore_hidden": true,
@@ -33,12 +38,19 @@ To be able to run this tool in a directory and compile it, you need to add a con
 }
 ```
 
-## ```minifier```
-The minifier object of the configuration requires only one node: ```options```
+## ```minifier``` Options related to running ```html-minifier```
 #### ```options``` The JSON array that contains the parameters to pass over to the minifier
+#### ```node_path``` Absolute path to the NodeJS binary
+#### ```minifier_path``` Absolute path to the html-minifier script
+These paths might include a ```~``` which will be substituted with the ```user.home``` property
 
 ## ```make```
 The make configuration is responsible for specifying the files to compile or include in the built project
+#### ```root``` The project root (e.g.: ```src```)
+#### ```output_type``` The way the built project is outputted
+ - ```dir```
+ - ```zip```
+#### ```output```
 #### ```mode``` The way HTML files are chosen
  - ```traverse```
  - ```root_only```

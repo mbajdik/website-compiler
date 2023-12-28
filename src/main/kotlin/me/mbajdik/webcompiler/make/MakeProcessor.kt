@@ -23,13 +23,16 @@ import me.mbajdik.webcompiler.state.Manager
 import me.mbajdik.webcompiler.task.helpers.WebLocalFileHandler
 import me.mbajdik.webcompiler.task.tasks.HTMLProcessTask
 import me.mbajdik.webcompiler.util.JSONUtil
-import me.mbajdik.webcompiler.util.PathUtilities
+import me.mbajdik.webcompiler.util.SegmentedPath
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import kotlin.collections.HashMap
 
 class MakeProcessor(
     private val manager: Manager,
@@ -37,15 +40,15 @@ class MakeProcessor(
     private val root: String,
     private val explicitThreads: Int? = null,
 ) {
-    fun processed(): HashMap<List<String>, ByteArray> = processFiles();
+    fun processed(): HashMap<SegmentedPath, ByteArray> = processFiles();
 
     fun processedZip(): ByteArray {
-        val baos = ByteArrayOutputStream();
-        val zos = ZipOutputStream(baos);
+        val bos = ByteArrayOutputStream();
+        val zos = ZipOutputStream(bos);
 
-        for ((paths, contents) in processed()) {
-            val path = PathUtilities.joinPathList(paths).path.toString();
-            val e = ZipEntry(path);
+        for ((path, contents) in processed()) {
+            val pathString = path.file().toString();
+            val e = ZipEntry(pathString);
 
             zos.putNextEntry(e);
             zos.write(contents, 0, contents.size);
@@ -54,26 +57,39 @@ class MakeProcessor(
 
         zos.close();
 
-        return baos.toByteArray();
+        return bos.toByteArray();
     }
 
-    private fun processFiles(): HashMap<List<String>, ByteArray> {
-        val collected = recurseCollect(emptyList());
+    private fun processFiles(): HashMap<SegmentedPath, ByteArray> {
+        val collected = recurseCollect(SegmentedPath.EMPTY);
 
         val finalThreads = explicitThreads ?: config.threads
 
-        val tasker = ConcurrentLinkedQueue(collected);
-        val receiver = ConcurrentHashMap<List<String>, ByteArray>();
+        val taskerHTML = ConcurrentLinkedQueue(collected.html);
+        val taskerOther = ConcurrentLinkedQueue(collected.other);
+        val receiver = ConcurrentHashMap<SegmentedPath, ByteArray>();
+
+        val runningThreads = AtomicInteger(0);
 
         fun processorThread(main: Boolean = false) {
+            runningThreads.incrementAndGet();
             if (!main) manager.pushThread(Thread.currentThread());
 
-            while (!tasker.isEmpty()) {
-                val task = tasker.poll();
-                receiver[task.paths] = handleFile(task.paths, task.type);
+            while (!taskerHTML.isEmpty()) {
+                val path = taskerHTML.poll() ?: continue;
+                receiver[path] = handleCompile(path);
+            }
+
+            while (!taskerOther.isEmpty()) {
+                val path = taskerOther.poll() ?: continue;
+
+                if (config.unusedMode() && manager.getSeenSite(path)) continue;
+
+                receiver[path] = handleOther(path);
             }
 
             if (!main) manager.popThread(Thread.currentThread());
+            runningThreads.decrementAndGet();
         }
 
         for (tasks in 0 until finalThreads - 1) {
@@ -87,102 +103,115 @@ class MakeProcessor(
         manager.pushThread(Thread.currentThread());
         processorThread(main = true);
 
-        while (receiver.keys.size != collected.size) {/*Wait*/} // Should have completed
+        while (runningThreads.get() != 0) {/*Wait*/} // Should have completed
 
         manager.popThread(Thread.currentThread())
 
         return HashMap(receiver);
     }
 
-    private fun recurseCollect(parentPaths: List<String>): List<MakeTask> {
-        val children = PathUtilities.joinPathListWithRoot(root, parentPaths).listFiles() ?: emptyArray<File>();
-        val out = mutableListOf<MakeTask>()
+    private fun recurseCollect(parentPath: SegmentedPath): MakeTaskCollection {
+        val children = parentPath.withRoot(root).listFiles() ?: emptyArray<File>();
+
+        val outHTML = mutableListOf<SegmentedPath>()
+        val outOther = mutableListOf<SegmentedPath>()
 
         for (child in children) {
-            if (config.ignoreHidden && PathUtilities.isFileHidden(child)) continue;
+            if (config.ignoreHidden && isFileHidden(child)) continue;
 
-            val childPaths = parentPaths + child.name;
+            val path = parentPath.child(child.name);
 
             // disregarding the makefile - only this for now
-            if (isIgnored(childPaths)) continue;
+            if (isIgnored(path)) continue;
 
             if (child.isFile) {
-                val includeHTML = isHTML(child.name) && checkIncludeHTML(childPaths);
-                val includeOther = checkIncludeOther(childPaths, child, includeHTML);
+                val includeHTML = isHTML(child.name) && checkIncludeHTML(path);
+                val includeOther = checkIncludeOther(path, child);
 
                 if (!includeHTML && !includeOther) continue;
 
-                val type = if (includeHTML) MakeType.COMPILE else MakeType.OTHER;
-
-                out += MakeTask(childPaths, type);
-            } else if (child.isDirectory) {
-                out += recurseCollect(childPaths);
-            }
-        }
-
-        return out;
-    }
-
-    private fun handleFile(childPaths: List<String>, type: MakeType): ByteArray {
-        when (type) {
-            MakeType.COMPILE -> {
-                val handler = WebLocalFileHandler.local(root, PathUtilities.joinPathList(childPaths).toString());
-                val task = HTMLProcessTask(manager, handler)
-                val processed = task.process();
-                val contents = if (config.minifyHTML) task.minify(config.minifierOptions) else processed;
-                return contents.toByteArray();
-            }
-            MakeType.OTHER -> {
-                val handler = WebLocalFileHandler.local(root, PathUtilities.joinPathList(childPaths).toString());
-                val bytes = handler.fileBytes(manager);
-
-                return if (PathUtilities.getFileExtension(childPaths.last()) == "json" && config.otherMinifyJSON) {
-                    JSONUtil.General.minifyJSON(String(bytes)).toByteArray();
+                if (includeHTML) {
+                    outHTML.add(path)
                 } else {
-                    bytes;
+                    outOther.add(path)
                 }
+            } else if (child.isDirectory) {
+                val subCollection = recurseCollect(path);
+
+                outHTML.addAll(subCollection.html);
+                outOther.addAll(subCollection.other);
             }
+        }
+
+        return MakeTaskCollection(
+            html = Collections.unmodifiableList(outHTML),
+            other = Collections.unmodifiableList(outOther)
+        );
+    }
+
+
+    private fun handleCompile(path: SegmentedPath): ByteArray {
+        val handler = WebLocalFileHandler.local(
+            root = root,
+            path = path.file().toString()
+        )
+
+        val task = HTMLProcessTask(manager = manager, handler = handler)
+
+        val contents = if (config.minifyHTML) task.minifiedProcess(
+            options = config.minifierOptions,
+            nodePath = config.nodePath,
+            minifierPath = config.minifierPath,
+        ) else task.process();
+
+        return contents.toByteArray();
+    }
+
+    private fun handleOther(path: SegmentedPath): ByteArray {
+        val handler = WebLocalFileHandler.local(
+            root = root,
+            path = path.file().toString()
+        )
+
+        val bytes = handler.fileBytes(manager);
+
+        return if (getFileExtension(path.filename()) == "json" && config.otherMinifyJSON) {
+            JSONUtil.General.minifyJSON(String(bytes)).toByteArray();
+        } else {
+            bytes;
         }
     }
 
-    private fun checkIncludeHTML(childPaths: List<String>): Boolean {
+    private fun checkIncludeHTML(childPath: SegmentedPath): Boolean {
         var include = false;
         when (config.mode) {
             MakeConfig.Mode.TRAVERSE -> {include = true}
-            MakeConfig.Mode.ROOT_ONLY -> {if (childPaths.size == 1) include = true;}
+            MakeConfig.Mode.ROOT_ONLY -> {if (childPath.isSingle()) include = true;}
             MakeConfig.Mode.MANUAL -> {
-                include = isParentDirValid(config.manualFiles, childPaths);
-                /*if (config.manualFiles.contains(childPaths)) {
-                    include = true;
-                }*/
+                include = childPath.isChildOfAny(config.manualFiles);
             }
         }
         return include;
     }
 
-    private fun checkIncludeOther(childPaths: List<String>, child: File, includesHTML: Boolean): Boolean {
+    private fun checkIncludeOther(childPath: SegmentedPath, child: File): Boolean {
         var includeOther = false;
         when (config.otherMode) {
             MakeConfig.OtherMode.ALL -> {includeOther = true};
+            MakeConfig.OtherMode.UNUSED_SITE -> {includeOther = true};
             MakeConfig.OtherMode.NO_SITE -> {if (!isSiteFile(child.name)) includeOther = true};
             MakeConfig.OtherMode.ASSETS -> {if (isAssetFile(child.name)) includeOther = true};
             MakeConfig.OtherMode.MANUAL -> {
                 var validManual = false;
                 when (config.otherManualMode) {
                     MakeConfig.OtherManualMode.ALL -> {validManual = true};
+                    MakeConfig.OtherManualMode.UNUSED_SITE -> {validManual = true};
                     MakeConfig.OtherManualMode.NO_SITE -> {if (!isSiteFile(child.name)) validManual = true};
                     MakeConfig.OtherManualMode.ASSETS -> {if (isAssetFile(child.name)) validManual = true};
                 }
 
                 if (validManual) {
-                    includeOther = isParentDirValid(config.otherManualFiles, childPaths);
-                    /*parentLoop@ for (i in childPaths.indices) {
-                        val sliced = childPaths.slice(0..childPaths.size - 1 - i);
-                        if (config.otherManualFiles.contains(sliced)) {
-                            includeOther = true
-                            break@parentLoop;
-                        };
-                    }*/
+                    includeOther = childPath.isChildOfAny(config.otherManualFiles);
                 }
             };
             MakeConfig.OtherMode.NONE -> {};
@@ -191,43 +220,41 @@ class MakeProcessor(
         return includeOther;
     }
 
-    enum class MakeType { COMPILE, OTHER }
-    data class MakeTask(val paths: List<String>, val type: MakeType);
+    data class MakeTaskCollection(val html: List<SegmentedPath>, val other: List<SegmentedPath>)
 
     companion object {
         private val HTMLs = listOf("html", "shtml");
         private val SITE_FILES = listOf("html", "shtml", "css", "js");
         private val ASSET_FILES = listOf("png", "jpg", "jpeg", "ico", "gif", "svg", "zip", "json", "toml", "xml", "yml", "yaml");
-        private val IGNORED: List<List<String>> = listOf(listOf("wmake.json"))
+        private val IGNORED: List<SegmentedPath> = listOf(SegmentedPath.explode("wmake.json"))
 
         fun isHTML(name: String): Boolean {
-            val ext = PathUtilities.getFileExtension(name);
+            val ext = getFileExtension(name);
             return HTMLs.contains(ext);
         }
 
         fun isSiteFile(name: String): Boolean {
-            val ext = PathUtilities.getFileExtension(name);
+            val ext = getFileExtension(name);
             return SITE_FILES.contains(ext);
         }
 
         fun isAssetFile(name: String): Boolean {
-            val ext = PathUtilities.getFileExtension(name);
+            val ext = getFileExtension(name);
             return ASSET_FILES.contains(ext);
         }
 
-        fun isIgnored(paths: List<String>): Boolean {
+        fun isIgnored(paths: SegmentedPath): Boolean {
             return IGNORED.contains(paths);
         }
 
-        fun isParentDirValid(allowed: List<List<String>>, current: List<String>): Boolean {
-            for (i in current.indices) {
-                val sliced = current.slice(0..current.size - 1 - i);
-                if (allowed.contains(sliced)) {
-                    return true;
-                }
-            }
+        fun getFileExtension(name: String): String {
+            val i = name.lastIndexOf(".");
+            if (i > 0 && name.length > i+1) return name.substring(i+1)
+            return "";
+        }
 
-            return false;
+        fun isFileHidden(file: File): Boolean {
+            return file.name.startsWith(".") || file.isHidden;
         }
     }
 }

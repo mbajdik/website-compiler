@@ -28,27 +28,25 @@ import me.mbajdik.webcompiler.util.FileUtilities
 import me.mbajdik.webcompiler.util.TerminalUtils
 import org.apache.commons.cli.*
 import java.io.File
+import java.net.URI
 import kotlin.system.exitProcess
 
 object WMakeCompile {
     fun command(args: Array<String>) {
         val options = Options();
 
-        // optional root - cwd by default
         val optionRoot = Option.builder("r")
             .longOpt("root")
             .hasArg()
             .desc("The project root, CWD is used by default")
             .build();
 
-        // optional output file
         val optionOutput = Option.builder("o")
             .longOpt("save")
             .hasArg()
             .desc("Where to save the output, STDOUT is used by default")
             .build();
 
-        // optional
         val optionOptions = Option.builder("m")
             .longOpt("options")
             .hasArgs()
@@ -56,27 +54,23 @@ object WMakeCompile {
             .desc("Options to pass over to the minifier")
             .build();
 
-        // not even recommended
         val optionNoMinify = Option.builder("n")
             .longOpt("no-minify")
             .desc("Don't minify the output of the HTML compiler")
             .build();
 
-        // compile once - debug everywhere
         val optionLogFile = Option.builder()
             .longOpt("logfile")
             .hasArg()
             .desc("The file to save the log to")
             .build();
 
-        // in the weird case the user wants more debug information
         val optionLogLevel = Option.builder("l")
             .longOpt("loglevel")
             .hasArg()
             .desc("Specify the log level (e.g.: for errors only: 0)")
             .build();
 
-        // print this help
         val optionHelp = Option.builder("h")
             .longOpt("help")
             .desc("Display this message")
@@ -92,31 +86,42 @@ object WMakeCompile {
 
         val parser = DefaultParser();
         val parsed = try { parser.parse(options, args)!! } catch (e: ParseException) { null }
-        val file = if (parsed != null && parsed.argList.size > 0) File(parsed.argList[0]) else null;
+        val where = if (parsed != null && parsed.argList.size > 0) parsed.argList[0] else null;
 
-        // printing (error)+help message
-        if (parsed == null || file == null || parsed.hasOption(optionHelp)) {
+        if (parsed == null || where == null || parsed.hasOption(optionHelp)) {
             val formatter = HelpFormatter();
             formatter.printHelp("wmake compile [OPTIONS...] [FILE]", options);
             exitProcess(1);
         }
 
+        val logFile: File? = if (parsed.hasOption(optionLogFile)) File(parsed.getOptionValue(optionLogFile)) else null;
+        val logLevel = parsed.getOptionValue(optionLogLevel)?.toIntOrNull() ?: 2
         val freeSTDOUT = parsed.hasOption(optionOutput);
-        val logfile: File? = if (parsed.hasOption(optionLogFile)) File(parsed.getOptionValue(optionLogFile)) else null;
+        val quiet = !freeSTDOUT;
 
         val manager = Manager(
-            logger = Logger(logFile = logfile, logLevel = parsed.getOptionValue(optionLogLevel)?.toIntOrNull() ?: 2),
+            logger = Logger(logFile = logFile, logLevel = logLevel),
             freeSTDOUT = freeSTDOUT,
-            cli = freeSTDOUT,
+            quiet = quiet,
         )
 
-        val rootDir =
-            if (parsed.hasOption(optionRoot))
-                File(parsed.getOptionValue(optionRoot))
-            else
-                askUnspecifiedRoot(freeSTDOUT, file)
 
-        val handler = WebLocalFileHandler.local(rootDir.toString(), rootDir.toURI().relativize(file.toURI()).path);
+        val scheme = URI(where).scheme;
+        val handler = if (scheme != null && scheme.isNotEmpty()) {
+                WebLocalFileHandler.remote(where)
+            } else {
+                val file = File(where)
+                val rootDir =
+                    if (parsed.hasOption(optionRoot))
+                        File(parsed.getOptionValue(optionRoot))
+                    else
+                        askUnspecifiedRoot(freeSTDOUT, file)
+
+                val filePath = rootDir.toURI().relativize(file.toURI()).path
+
+                WebLocalFileHandler.local(rootDir.toString(), filePath);
+            }
+
         val task = HTMLProcessTask(manager, handler);
         val minifyOpts =
             if (parsed.hasOption(optionOptions))
@@ -124,21 +129,21 @@ object WMakeCompile {
             else
                 HTMLMinifierCompat.DEFAULT_OPTIONS;
 
-        // Starting actual compile timer
-        manager.init();
 
-        // Finally executing
-        val processed = task.process()
+        manager.init();
         val out =
             if (parsed.hasOption(optionNoMinify))
-                processed // using cached
+                task.process();
             else
-                task.minify(minifyOpts);
+                task.minifiedProcess(minifyOpts);
 
 
-        // Giving output
         if (freeSTDOUT) {
-            FileUtilities.writeToFileSafe(out.toByteArray(), File(parsed.getOptionValue(optionOutput)), true);
+            FileUtilities.writeToFileSafe(
+                bytes = out.toByteArray(),
+                file = File(parsed.getOptionValue(optionOutput)),
+                freeSTDOUT = true
+            );
         } else {
             println(out);
         }
@@ -146,9 +151,11 @@ object WMakeCompile {
         manager.exit(false);
     }
 
-    fun askUnspecifiedRoot(freeSTDOUT: Boolean, file: File): File {
+    private fun askUnspecifiedRoot(freeSTDOUT: Boolean, file: File): File {
         return if (freeSTDOUT && file.parentFile != null) {
-            if (TerminalUtils.yesOrNo(true, "No root directory was given, set the root to ${file.parent}?")) {
+            val prompt = "No root directory was given, set the root to ${file.parent}?";
+
+            if (TerminalUtils.yesOrNo(default = true, prompt = prompt)) {
                 file.parentFile
             } else {
                 File(".")
