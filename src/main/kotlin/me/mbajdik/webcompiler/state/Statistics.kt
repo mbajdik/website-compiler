@@ -49,11 +49,17 @@ class Statistics {
     fun printStatistics(error: Boolean) {
         stop();
 
-        val exitStatus =
-            if (error) getFancyMessage("FAIL", ANSI::red) else getFancyMessage("SUCCESS", ANSI::green)
-
         val warningsNum = getErrorOccurs(ErrorMessage.MessageType.WARNING, ANSI::yellow);
         val internalErrNum = getErrorOccurs(ErrorMessage.MessageType.INTERNAL_ERROR, ANSI::purple);
+
+        val internalErrors = getErrorAmount(ErrorMessage.MessageType.INTERNAL_ERROR)
+
+        val exitStatus =
+            if (error) getFancyMessage("FAIL", ANSI::red)
+            else getFancyMessage(
+                "SUCCESS",
+                if (internalErrors == 0) ANSI::green else ANSI::purple
+            )
 
         val timeDeltaSecs = (END_TIME - START_TIME) / 1000.0
 
@@ -63,11 +69,13 @@ class Statistics {
             //"HTML files compiled: $HTML_COMPILED",
             "Warnings: $warningsNum",
             "Internal errors: $internalErrNum",
+            if (!error && internalErrors != 0)
+                "A non-fatal internal error occurred, but the output might not be what you want" else null,
             "",
             "Time took: ${if (START_TIME == -1L) "not measured" else String.format("%.3f", timeDeltaSecs) + "s"}"
         )
 
-        println(lines.joinToString("\n"));
+        println(lines.filterNotNull().joinToString("\n"));
     }
 
     private fun getFancyMessage(msg: String, modifier: (String) -> String): List<String> {
@@ -81,9 +89,11 @@ class Statistics {
     }
 
     private fun getErrorOccurs(type: ErrorMessage.MessageType, transform: (String) -> String): String {
-        if (!ERROR_TYPES_COUNT.containsKey(type) || ERROR_TYPES_COUNT[type] == 0) return ANSI.green("0");
-        return transform(""+ERROR_TYPES_COUNT[type]);
+        val occurrences = getErrorAmount(type);
+        return if (occurrences == 0) ANSI.green("0") else transform(""+ERROR_TYPES_COUNT[type])
     }
+
+    private fun getErrorAmount(type: ErrorMessage.MessageType): Int = ERROR_TYPES_COUNT[type] ?: 0;
 
     companion object {
         fun space(n: Int): String = " ".repeat(n);

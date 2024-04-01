@@ -2,7 +2,7 @@
 ### A really simple Kotlin application to compile and build static web-applications
 
 ## Usage
-See the specific files for [configuration](doc/CONFIGURATION.md) and [CLI usage](doc/CLI.md)
+See the specific files for [imports](doc/IMPORTS.md), [configuration](doc/CONFIGURATION.md) and [CLI usage](doc/CLI.md)
 
 ## Installation, dependencies
 ### If you don't want to compile

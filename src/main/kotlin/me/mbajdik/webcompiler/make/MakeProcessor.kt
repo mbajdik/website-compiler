@@ -106,7 +106,10 @@ class MakeProcessor(
 
         manager.popThread(Thread.currentThread())
 
-        return HashMap(receiver);
+        val outMap = HashMap(receiver);
+        if (config.ignoreImported) manager.imported().forEach { outMap.remove(it) }
+
+        return outMap;
     }
 
     private fun recurseCollect(parentPath: SegmentedPath): MakeTaskCollection {
@@ -125,7 +128,7 @@ class MakeProcessor(
 
             if (child.isFile) {
                 val includeHTML = isHTML(child.name) && checkIncludeHTML(path);
-                val includeOther = checkIncludeOther(path, child);
+                val includeOther = checkIncludeOther(path);
 
                 if (!includeHTML && !includeOther) continue;
 
@@ -160,9 +163,11 @@ class MakeProcessor(
             handler = handler,
             addJS = config.addJS,
             addCSS = config.addCSS,
+            addToHeader = config.addToHeader,
 
-            footerHTML = config.footerHTML,
-            autoTitle = config.autoTitle
+            footerHTML = if (path.isChildOfAny(config.footerExceptions)) null else config.footerHTML,
+            autoTitle = config.autoTitle,
+            encoding = config.encoding
         )
 
         val contents = if (config.minifyHTML) task.minifiedProcess(
@@ -192,6 +197,8 @@ class MakeProcessor(
     }
 
     private fun checkIncludeHTML(childPath: SegmentedPath): Boolean {
+        if (childPath.isChildOfAny(config.excludeFiles)) return false;
+
         var include = false;
         when (config.mode) {
             MakeConfig.Mode.RECURSE -> {include = true}
@@ -203,20 +210,22 @@ class MakeProcessor(
         return include;
     }
 
-    private fun checkIncludeOther(childPath: SegmentedPath, child: File): Boolean {
+    private fun checkIncludeOther(childPath: SegmentedPath): Boolean {
+        if (childPath.isChildOfAny(config.excludeFiles)) return false;
+
         var includeOther = false;
         when (config.otherMode) {
             MakeConfig.OtherMode.ALL -> {includeOther = true};
             MakeConfig.OtherMode.UNUSED_SITE -> {includeOther = true};
-            MakeConfig.OtherMode.NO_SITE -> {if (!isSiteFile(child.name)) includeOther = true};
-            MakeConfig.OtherMode.ASSETS -> {if (isAssetFile(child.name)) includeOther = true};
+            MakeConfig.OtherMode.NO_SITE -> {if (!isSiteFile(childPath.filename())) includeOther = true};
+            MakeConfig.OtherMode.ASSETS -> {if (isAssetFile(childPath.filename())) includeOther = true};
             MakeConfig.OtherMode.MANUAL -> {
                 var validManual = false;
                 when (config.otherManualMode) {
                     MakeConfig.OtherManualMode.ALL -> {validManual = true};
                     MakeConfig.OtherManualMode.UNUSED_SITE -> {validManual = true};
-                    MakeConfig.OtherManualMode.NO_SITE -> {if (!isSiteFile(child.name)) validManual = true};
-                    MakeConfig.OtherManualMode.ASSETS -> {if (isAssetFile(child.name)) validManual = true};
+                    MakeConfig.OtherManualMode.NO_SITE -> {if (!isSiteFile(childPath.filename())) validManual = true};
+                    MakeConfig.OtherManualMode.ASSETS -> {if (isAssetFile(childPath.filename())) validManual = true};
                 }
 
                 if (validManual) {
@@ -230,6 +239,11 @@ class MakeProcessor(
     }
 
     data class MakeTaskCollection(val html: List<SegmentedPath>, val other: List<SegmentedPath>)
+
+    private fun isAssetFile(name: String): Boolean {
+        val ext = getFileExtension(name);
+        return ASSET_FILES.contains(ext) || config.otherAssetExtensions.contains(ext);
+    }
 
     companion object {
         private val HTMLs = listOf("html", "shtml");
@@ -247,7 +261,7 @@ class MakeProcessor(
             return SITE_FILES.contains(ext);
         }
 
-        fun isAssetFile(name: String): Boolean {
+        fun isGeneralAsset(name: String): Boolean {
             val ext = getFileExtension(name);
             return ASSET_FILES.contains(ext);
         }

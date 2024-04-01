@@ -62,6 +62,17 @@ object WMakeCompile {
             .desc("Don't minify the CSS in the compiled HTML")
             .build();
 
+        val optionEncodingUTF8 = Option.builder("u")
+            .longOpt("encoding-utf8")
+            .desc("Add UTF-8 encoding metadata to the file")
+            .build();
+
+        val optionEncoding = Option.builder("e")
+            .longOpt("encoding")
+            .hasArg()
+            .desc("Add custom encoding metadata to the file")
+            .build();
+
         val optionLogFile = Option.builder()
             .longOpt("logfile")
             .hasArg()
@@ -84,6 +95,8 @@ object WMakeCompile {
         options.addOption(optionNoMinify);
         options.addOption(optionNoMinifyJS);
         options.addOption(optionNoMinifyCSS);
+        options.addOption(optionEncodingUTF8);
+        options.addOption(optionEncoding);
         options.addOption(optionLogFile);
         options.addOption(optionLogLevel);
         options.addOption(optionHelp);
@@ -126,7 +139,16 @@ object WMakeCompile {
                 WebLocalFileHandler.local(rootDir.toString(), filePath);
             }
 
-        val task = HTMLProcessTask(manager, handler, listOf(), listOf(), null, MakeConfig.AutoTitleMode.NONE);
+        val task = HTMLProcessTask(
+            manager = manager,
+            handler = handler,
+            addJS = listOf(),
+            addCSS = listOf(),
+            addToHeader = listOf(),
+            footerHTML = null,
+            autoTitle = MakeConfig.AutoTitleMode.NONE,
+            encoding = if (parsed.hasOption(optionEncodingUTF8)) "UTF-8" else parsed.getOptionValue(optionEncoding)
+        );
 
         manager.init();
         val out =

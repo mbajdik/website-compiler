@@ -32,9 +32,11 @@ class HTMLProcessTask constructor(
 
     val addJS: List<String>,
     val addCSS: List<String>,
+    val addToHeader: List<String>,
 
     val footerHTML: String?,
     val autoTitle: MakeConfig.AutoTitleMode,
+    val encoding: String?
 ): CompileTask(manager, handler) {
     init {
         if (handler.isLocal()) manager.setSeenSite(SegmentedPath.explode(handler.path()).relative())
@@ -45,9 +47,12 @@ class HTMLProcessTask constructor(
         handler = handler.fileRelative(path),
         addJS = addJS,
         addCSS = addCSS,
+        addToHeader = addToHeader,
         footerHTML = footerHTML,
-        autoTitle = autoTitle
+        autoTitle = autoTitle,
+        encoding = encoding
     )
+
     override fun getTaskTypeName(): String = "HTML compile"
 
 

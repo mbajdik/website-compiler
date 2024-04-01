@@ -45,7 +45,8 @@ class Manager constructor(
     private val errorQueue: ConcurrentLinkedQueue<ErrorMessage> = ConcurrentLinkedQueue(),
     private val usedThreads: ConcurrentHashMap<Thread, Unit> = ConcurrentHashMap(),
     private val cachedFiles: ConcurrentHashMap<WebLocalFileHandler, ByteArray> = ConcurrentHashMap(),
-    private val seenSiteFiles: ConcurrentHashMap<SegmentedPath, Unit> = ConcurrentHashMap()
+    private val seenSiteFiles: ConcurrentHashMap<SegmentedPath, Unit> = ConcurrentHashMap(),
+    private val imported: ConcurrentHashMap<SegmentedPath, Unit> = ConcurrentHashMap()
 ) {
     fun pushErrorMessage(
         task: DebugInformationSupplier,
@@ -140,4 +141,9 @@ class Manager constructor(
 
     fun setSeenSite(path: SegmentedPath) = seenSiteFiles.put(path, Unit);
     fun getSeenSite(path: SegmentedPath): Boolean = seenSiteFiles.containsKey(path.relative());
+
+
+    fun setImported(path: SegmentedPath) = imported.put(path.relative(), Unit);
+    fun getImported(path: SegmentedPath): Boolean = imported.containsKey(path.relative());
+    fun imported(): List<SegmentedPath> = HashMap(imported).keys.toList();
 }

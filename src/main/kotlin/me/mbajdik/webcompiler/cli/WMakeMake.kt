@@ -59,7 +59,7 @@ object WMakeMake {
         val optionLogFile = Option.builder()
             .longOpt("logfile")
             .hasArg()
-            .desc("The file to save the log to, otherwise ([root]/.wmake/logs/[date].log")
+            .desc("The file to save the log to, otherwise ([root]/.wmake/logs/[date].log)")
             .build();
 
         val optionLogLevel = Option.builder("l")

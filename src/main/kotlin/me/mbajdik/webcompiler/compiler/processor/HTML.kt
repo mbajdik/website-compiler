@@ -22,8 +22,11 @@ package me.mbajdik.webcompiler.compiler.processor
 import me.mbajdik.webcompiler.make.MakeConfig
 import me.mbajdik.webcompiler.state.data.ErrorMessage
 import me.mbajdik.webcompiler.task.tasks.HTMLProcessTask
+import me.mbajdik.webcompiler.util.SegmentedPath
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Comment
 import org.jsoup.nodes.Element
+import org.jsoup.nodes.Node
 
 object HTML {
     fun process(task: HTMLProcessTask): String {
@@ -31,10 +34,22 @@ object HTML {
         val rootState = CompilerState(
             addedSources = task.addJS.isEmpty() && task.addCSS.isEmpty(),
             addedFooter = task.footerHTML == null,
+            addedEncoding = task.encoding == null,
+            addedHeaderElements = task.addToHeader.isEmpty(),
             foundTitle = null
         )
 
-        val modified = processNode(task, document, rootState);
+        val imported = processImport(task, document)
+
+        if (imported !is Element) task.manager.pushErrorMessage(
+            task = task,
+            type = ErrorMessage.MessageType.ERROR,
+            message = "Root of HTML is a comment",
+            snippet = null,
+            exit = true
+        );
+
+        val modified = processNode(task, imported as Element, rootState);
 
         var rebuilt = modified;
 
@@ -52,6 +67,24 @@ object HTML {
             prepend = false
         )
 
+        if (!rootState.addedFooter && task.encoding != null) rebuilt = addElementListToParentRoot(
+            parentTag = "head",
+            doc = rebuilt,
+            elementList = listOf(
+                Element("meta").apply {
+                    attr("charset", task.encoding)
+                }
+            ),
+            prepend = false
+        )
+
+        if (!rootState.addedHeaderElements) rebuilt = addListToParentRoot(
+            parentTag = "head",
+            doc = rebuilt,
+            addableList = task.addToHeader,
+            adder = {parent, addable -> parent.append(addable)}
+        )
+
         if (task.autoTitle != MakeConfig.AutoTitleMode.NONE && rootState.foundTitle != null) {
             if (rootState.foundH1Tag && !rootState.foundTitleTag &&
                 (task.autoTitle == MakeConfig.AutoTitleMode.TITLE || task.autoTitle == MakeConfig.AutoTitleMode.BOTH)) {
@@ -65,6 +98,45 @@ object HTML {
         }
 
         return rebuilt.toString();
+    }
+
+    private fun processImport(task: HTMLProcessTask, node: Node): Node {
+        for (element in node.childNodes()) {
+            if (element is Comment && element.data.startsWith("@import-html")) {
+                if (node.ownerDocument() != null) task.manager.pushErrorMessage(
+                    task = task,
+                    type = ErrorMessage.MessageType.ERROR,
+                    message = "Cannot import entire document, only body-fragments",
+                    exit = true
+                )
+
+                val split = element.data.split(" ");
+
+                if (split.size == 1) task.manager.pushErrorMessage(
+                    task = task,
+                    type = ErrorMessage.MessageType.ERROR,
+                    message = "Import statement has no arguments",
+                    snippet = ErrorMessage.CodeSnippet.fromCode(element.data, 0),
+                    exit = true
+                )
+
+                val dest = split.slice(1 until split.size).joinToString(" ");
+
+                val subHandler = task.handler.fileRelative(dest);
+                val elementsToInclude = Jsoup.parseBodyFragment(subHandler.fileContentsString(task.manager)).body().children();
+
+                elementsToInclude.forEach { element.before(it) }
+                element.remove()
+
+                if (subHandler.isLocal()) task.manager.setImported(SegmentedPath.explode(subHandler.path()).relative())
+
+                continue;
+            }
+
+            processImport(task, element)
+        }
+
+        return node;
     }
 
     private fun processNode(task: HTMLProcessTask, node: Element, state: CompilerState): Element {
@@ -135,6 +207,16 @@ object HTML {
                     state.addedFooter = true;
                 }
 
+                if (!state.addedEncoding && task.encoding != null && node.tagName() == "head") {
+                    node.appendChild(getEncodingNode(task));
+                    state.addedEncoding = true;
+                }
+
+                if (!state.addedHeaderElements && node.tagName() == "head") {
+                    task.addToHeader.forEach { node.append(it) };
+                    state.addedHeaderElements = true;
+                }
+
                 val modified = mutableListOf<Element?>()
                 for (element in node.children()) {
                     val res = processNode(task, element, state)
@@ -186,6 +268,15 @@ object HTML {
         return footerElem;
     }
 
+    private fun getEncodingNode(task: HTMLProcessTask): Element {
+        if (task.encoding == null) return Element("span");
+
+        val metaElem = Element("meta");
+        metaElem.attr("charset", task.encoding)
+
+        return metaElem;
+    }
+
     private fun addH1TitleToBody(doc: Element, titleHTML: String): Element =
         addElementToParentInRoot("body", doc, "h1", titleHTML, true);
 
@@ -210,13 +301,25 @@ object HTML {
         doc: Element,
         elementList: List<Element>,
         prepend: Boolean
+    ): Element = addListToParentRoot(
+        parentTag = parentTag,
+        doc = doc,
+        addableList = elementList,
+        adder = if (prepend) {parent, addable -> parent.prependChild(addable)} else {parent, addable -> parent.appendChild(addable)}
+    )
+
+    private fun <T> addListToParentRoot(
+        parentTag: String,
+        doc: Element,
+        addableList: List<T>,
+        adder: (Element, T) -> Unit,
     ): Element {
         var added = false;
 
         fun recurseAdd(node: Element): Element {
             if (!added) {
                 if (node.tagName() == parentTag) {
-                    if (prepend) node.prependChildren(elementList) else node.appendChildren(elementList);
+                    addableList.forEach { adder(node, it) }
                     added = true;
 
                     return node;
@@ -242,7 +345,7 @@ object HTML {
                 if (node.tagName() == "html") {
                     val newParent = Element(parentTag);
 
-                    newParent.appendChildren(elementList);
+                    addableList.forEach { adder(node, it) }
 
                     node.appendChild(newParent);
 
@@ -263,6 +366,8 @@ object HTML {
     data class CompilerState(
         var addedSources: Boolean = false,
         var addedFooter: Boolean = false,
+        var addedEncoding: Boolean = false,
+        var addedHeaderElements: Boolean = false,
 
         var foundTitle: String? = null,
         var foundH1Tag: Boolean = false,

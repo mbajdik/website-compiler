@@ -47,6 +47,7 @@ These paths might include a ```~``` which will be substituted with the ```user.h
 ## ```compiler``` HTML compiler settings
 #### ```add_js``` JavaScript sources to add to the header in every HTML file (header is made if it doesn't exist)
 #### ```add_css``` Same, but with CSS files
+#### ```add_to_header``` Things to append to the header HTML contents
 It's a good practice to add the ```/``` at the beginning of the paths, since that would indicate an absolute path
 #### ```footer_html``` (nullable) Text to add at the end of the first ```<body>``` tag in a ```<footer>``` tag
 #### ```auto_title``` Whether to add an ```<h1>``` tag to the body containing the contents of the first occurring ```<title>``` tag
@@ -54,6 +55,7 @@ It's a good practice to add the ```/``` at the beginning of the paths, since tha
  - ```h1``` insert an ```h1``` tag if needed
  - ```title``` insert a ```title``` tag if needed
  - ```both``` automatically detect the presence of each, and insert the other if it doesn't exist
+#### ```encoding``` Whether to add encoding boilerplate to the header
 
 ## ```make```
 The make configuration is responsible for specifying the files to compile or include in the built project
@@ -68,7 +70,8 @@ The make configuration is responsible for specifying the files to compile or inc
  - ```manual```
 #### ```manual``` (optional) The HTML files/dirs (traversed) to be compiled
 #### ```ignore_hidden``` Whether to ignore files that have the hidden status in the filesystem or start with a dot
-#### ```threads``` The total number of threads usable while compiling
+#### ```exclude_imported``` Whether to exclude files from the output, that have been imported by an other HTML
+#### ```threads``` The total number of threads usable while compiling (one thread per HTML file)
 
 <br>
 
@@ -86,9 +89,14 @@ The make configuration is responsible for specifying the files to compile or inc
  - ```assets```
  - ```manual```
  - ```none```
+#### ```other_asset_exts``` List of asset extensions to include
 #### ```manual``` (optional) The other files/dirs to be included
 #### ```manual_mode``` The way manual files are chosen
  - ```all```
  - ```no_site```
  - ```assets```
 #### ```minify_json``` Whether to simply minify all included JSON files
+
+At any of the paths specified for the maker/compiler (except ```add_js``` and ```add_css```) you will define an absolute path whether you start with a slash or not.
+If the file starts with any of the paths in the lists then it's considered a match. 
+You can use slashes and backslashes interchangeably here

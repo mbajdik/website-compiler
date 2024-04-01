@@ -33,15 +33,20 @@ class MakeConfig(json: JsonObject) {
 
     val addJS: List<String>;
     val addCSS: List<String>;
+    val addToHeader: List<String>;
     val footerHTML: String?;
+    val footerExceptions: List<SegmentedPath>;
     val autoTitle: AutoTitleMode;
+    val encoding: String?;
 
     val root: String?;
     val outputType: OutputType;
     val output: String?;
     val mode: Mode;
     val manualFiles: List<SegmentedPath>;
+    val excludeFiles: List<SegmentedPath>;
     val ignoreHidden: Boolean;
+    val ignoreImported: Boolean;
     val threads: Int;
 
     val hookRunner: List<String>;
@@ -49,6 +54,7 @@ class MakeConfig(json: JsonObject) {
     val proBuildHooks: List<List<String>>;
 
     val otherMode: OtherMode;
+    val otherAssetExtensions: List<String>;
     val otherManualFiles: List<SegmentedPath>;
     val otherManualMode: OtherManualMode;
     val otherMinifyJSON: Boolean;
@@ -56,7 +62,7 @@ class MakeConfig(json: JsonObject) {
     init {
         val jsonMinifier = JSONUtil.De.safeJsonObject(JSONUtil.De.safeObjectRoute(json, "minifier"));
         val jsonMinifierMinifyJS = jsonMinifier?.get("minify_js");
-        val jsonMinifierMinifyCSS = jsonMinifier?.get("minify_js");
+        val jsonMinifierMinifyCSS = jsonMinifier?.get("minify_css");
         val jsonMinifierNodePath = jsonMinifier?.get("node_path");
         val jsonMinifierMinifierPath = jsonMinifier?.get("minifier_path");
 
@@ -71,13 +77,19 @@ class MakeConfig(json: JsonObject) {
         val jsonCompiler = JSONUtil.De.safeJsonObject(JSONUtil.De.safeObjectRoute(json, "compiler"));
         val jsonCompilerAddJS = jsonCompiler?.get("add_js");
         val jsonCompilerAddCSS = jsonCompiler?.get("add_css");
+        val jsonCompilerAddToHeader = jsonCompiler?.get("add_to_header");
         val jsonCompilerFooterHTML = jsonCompiler?.get("footer_html");
+        val jsonCompilerFooterExceptions = jsonCompiler?.get("footer_exceptions");
         val jsonCompilerAutoTitle = jsonCompiler?.get("auto_title");
+        val jsonCompilerEncoding = jsonCompiler?.get("encoding");
 
         addJS = JSONUtil.De.safeArray(jsonCompilerAddJS);
         addCSS = JSONUtil.De.safeArray(jsonCompilerAddCSS);
+        addToHeader = JSONUtil.De.safeArray(jsonCompilerAddToHeader);
         footerHTML = JSONUtil.De.safeString(jsonCompilerFooterHTML);
+        footerExceptions = processPathList(JSONUtil.De.safeArray(jsonCompilerFooterExceptions));
         autoTitle = JSONUtil.De.safeEnum(jsonCompilerAutoTitle, AutoTitleMode.NONE);
+        encoding = JSONUtil.De.safeStringOrBool(jsonCompilerEncoding, "UTF-8");
 
 
 
@@ -87,7 +99,9 @@ class MakeConfig(json: JsonObject) {
         val jsonOutput = jsonMake?.get("output");
         val jsonMakeMode = jsonMake?.get("mode");
         val jsonMakeManual = jsonMake?.get("manual");
+        val jsonMakeExcludeFiles = jsonMake?.get("exclude");
         val jsonMakeIgnoreHidden = jsonMake?.get("ignore_hidden");
+        val jsonMakeExcludeImported = jsonMake?.get("exclude_imported");
         val jsonMakeThreads = jsonMake?.get("threads");
 
         this.root = JSONUtil.De.safeString(jsonRoot);
@@ -95,7 +109,9 @@ class MakeConfig(json: JsonObject) {
         this.output = JSONUtil.De.safeString(jsonOutput);
         this.mode = JSONUtil.De.safeEnum(jsonMakeMode, Mode.ROOT_ONLY);
         this.manualFiles = processPathList(JSONUtil.De.safeArray(jsonMakeManual));
+        this.excludeFiles = processPathList(JSONUtil.De.safeArray(jsonMakeExcludeFiles));
         this.ignoreHidden = JSONUtil.De.safeBoolean(jsonMakeIgnoreHidden, true);
+        this.ignoreImported = JSONUtil.De.safeBoolean(jsonMakeExcludeImported, true);
         this.threads = JSONUtil.De.safeInt(jsonMakeThreads, 1);
 
 
@@ -113,11 +129,13 @@ class MakeConfig(json: JsonObject) {
 
         val jsonMakeOther = JSONUtil.De.safeJsonObject(JSONUtil.De.safeObjectRoute(jsonMake, "other"));
         val jsonMakeOtherMode = jsonMakeOther?.get("mode");
+        val jsonMakeOtherOtherAssetExtensions = jsonMakeOther?.get("other_asset_exts");
         val jsonMakeOtherManual = jsonMakeOther?.get("manual");
         val jsonMakeOtherManualMode = jsonMakeOther?.get("manual_mode");
         val jsonMakeOtherMinifyJSON = jsonMakeOther?.get("minify_json");
 
         this.otherMode = JSONUtil.De.safeEnum(jsonMakeOtherMode, OtherMode.NO_SITE);
+        this.otherAssetExtensions = JSONUtil.De.safeArray(jsonMakeOtherOtherAssetExtensions);
         this.otherManualFiles = processPathList(JSONUtil.De.safeArray(jsonMakeOtherManual));
         this.otherManualMode = JSONUtil.De.safeEnum(jsonMakeOtherManualMode, OtherManualMode.ALL);
         this.otherMinifyJSON = JSONUtil.De.safeBoolean(jsonMakeOtherMinifyJSON, true);
@@ -142,7 +160,7 @@ class MakeConfig(json: JsonObject) {
             val out = mutableListOf<SegmentedPath>()
 
             for (full in fulls) {
-                out.add(SegmentedPath.explode(full));
+                out.add(SegmentedPath.explode(full).relative());
             }
 
             return Collections.unmodifiableList(out);

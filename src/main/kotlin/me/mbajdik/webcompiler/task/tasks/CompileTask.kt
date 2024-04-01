@@ -32,8 +32,6 @@ abstract class CompileTask constructor(
     override fun getDisplayPath(): String = handler.getDisplayPath();
     override fun toString(): String = " task in ${getDisplayPath()}"
 
-    // This will never happen
-    //fun subtaskHTML(path: String): HTMLProcessTask = HTMLProcessTask(handler).subtask(path)
     fun subtaskCSS(path: String): CSSProcessTask = CSSProcessTask(manager, handler).subtask(path)
     fun subtaskJS(path: String): JavascriptProcessTask = JavascriptProcessTask(manager, handler).subtask(path)
 

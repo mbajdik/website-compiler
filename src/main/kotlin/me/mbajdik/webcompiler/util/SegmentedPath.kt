@@ -95,9 +95,12 @@ data class SegmentedPath(
                 if (part != "") out.add(part);
             }
 
+            val absolute = Pattern.compile("(^/.*)|(^\\\\.*)|(^[A-Z]:\\\\.*)").matcher(path).matches()
+
             return SegmentedPath(
-                Collections.unmodifiableList(out),
-                Pattern.compile("(^/.*)|(^\\\\.*)|(^[A-Z]:\\\\.*)").matcher(path).matches()
+                Collections.unmodifiableList(out)
+                    .slice((if (absolute && path[0].isLetter()) 1 else 0) until out.size),
+                absolute
             )
         }
 

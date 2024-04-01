@@ -54,6 +54,12 @@ object JSONUtil {
             return if (elem != null && elem is JsonPrimitive && elem.isString) elem.asString else null;
         }
 
+        fun safeStringOrBool(elem: JsonElement?, ifBool: String?): String? {
+            return if (elem != null && elem is JsonPrimitive && elem.isString) elem.asString
+            else if (elem != null && elem is JsonPrimitive && elem.isBoolean && elem.asBoolean) ifBool;
+            else null
+        }
+
         fun safeArray(elem: JsonElement?): List<String> {
             return if (elem != null && elem.isJsonArray) arrayToStringList(elem.asJsonArray) else emptyList();
         }
