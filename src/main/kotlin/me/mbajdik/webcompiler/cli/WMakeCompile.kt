@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -19,7 +19,7 @@
 
 package me.mbajdik.webcompiler.cli
 
-import me.mbajdik.webcompiler.compiler.minifier.HTMLMinifierCompat
+import me.mbajdik.webcompiler.make.MakeConfig
 import me.mbajdik.webcompiler.state.Logger
 import me.mbajdik.webcompiler.state.Manager
 import me.mbajdik.webcompiler.task.helpers.WebLocalFileHandler
@@ -47,16 +47,24 @@ object WMakeCompile {
             .desc("Where to save the output, STDOUT is used by default")
             .build();
 
-        val optionOptions = Option.builder("m")
-            .longOpt("options")
-            .hasArgs()
-            .valueSeparator(';')
-            .desc("Options to pass over to the minifier")
-            .build();
-
         val optionNoMinify = Option.builder("n")
             .longOpt("no-minify")
             .desc("Don't minify the output of the HTML compiler")
+            .build();
+
+        val optionBuiltinMinify = Option.builder()
+            .longOpt("builtin-minify")
+            .desc("Use the built-in minifier (has some flaws)")
+            .build()
+
+        val optionNoMinifyJS = Option.builder()
+            .longOpt("no-minify-js")
+            .desc("Don't minify the JavaScript in the compiled HTML")
+            .build();
+
+        val optionNoMinifyCSS = Option.builder()
+            .longOpt("no-minify-css")
+            .desc("Don't minify the CSS in the compiled HTML")
             .build();
 
         val optionLogFile = Option.builder()
@@ -78,8 +86,10 @@ object WMakeCompile {
 
         options.addOption(optionRoot);
         options.addOption(optionOutput);
-        options.addOption(optionOptions);
         options.addOption(optionNoMinify);
+        options.addOption(optionBuiltinMinify);
+        options.addOption(optionNoMinifyJS);
+        options.addOption(optionNoMinifyCSS);
         options.addOption(optionLogFile);
         options.addOption(optionLogLevel);
         options.addOption(optionHelp);
@@ -122,20 +132,17 @@ object WMakeCompile {
                 WebLocalFileHandler.local(rootDir.toString(), filePath);
             }
 
-        val task = HTMLProcessTask(manager, handler);
-        val minifyOpts =
-            if (parsed.hasOption(optionOptions))
-                parsed.getOptionValues(optionOptions).toList()
-            else
-                HTMLMinifierCompat.DEFAULT_OPTIONS;
-
+        val task = HTMLProcessTask(manager, handler, listOf(), listOf(), null, MakeConfig.AutoTitleMode.NONE);
 
         manager.init();
         val out =
             if (parsed.hasOption(optionNoMinify))
                 task.process();
             else
-                task.minifiedProcess(minifyOpts);
+                task.minifiedProcess(
+                    minifyJS = !parsed.hasOption(optionNoMinifyJS),
+                    minifyCSS = !parsed.hasOption(optionNoMinifyCSS)
+                );
 
 
         if (freeSTDOUT) {

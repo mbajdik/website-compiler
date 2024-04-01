@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -21,7 +21,6 @@ package me.mbajdik.webcompiler.util
 
 import java.io.File
 import java.nio.file.Files
-import java.nio.file.Path
 
 object FileUtilities {
     fun writeToFileSafe(bytes: ByteArray, file: File, freeSTDOUT: Boolean = false, force: Boolean = false) {

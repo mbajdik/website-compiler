@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -22,8 +22,6 @@ package me.mbajdik.webcompiler
 import me.mbajdik.webcompiler.cli.WMakeCompile
 import me.mbajdik.webcompiler.cli.WMakeDumpConfig
 import me.mbajdik.webcompiler.cli.WMakeMake
-import me.mbajdik.webcompiler.state.Logger
-import me.mbajdik.webcompiler.state.Statistics
 import me.mbajdik.webcompiler.util.ANSI
 import java.io.File
 import kotlin.system.exitProcess

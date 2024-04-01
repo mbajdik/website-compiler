@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -19,7 +19,6 @@
 
 package me.mbajdik.webcompiler.util
 
-import java.io.File
 import java.net.URI
 
 object URIUtilities {

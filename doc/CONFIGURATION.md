@@ -5,12 +5,11 @@ To be able to run this tool in a directory and compile it, you need to add a con
 ```json
 {
   "minifier": {
-    "options": [
-      "--minify-js",
-      "--minify-css",
-      "--collapse-whitespace"
-    ],
+    "minify_js": false,
     "node_path": "/bin/node"
+  },
+  "compiler": {
+    "add_css": ["/style.css"]
   },
   "make": {
     "root": "src",
@@ -39,10 +38,22 @@ To be able to run this tool in a directory and compile it, you need to add a con
 ```
 
 ## ```minifier``` Options related to running ```html-minifier```
-#### ```options``` The JSON array that contains the parameters to pass over to the minifier
+#### ```minify_js``` Whether to minify JavaScript files
+#### ```minify_css``` Whether to minify CSS files
 #### ```node_path``` Absolute path to the NodeJS binary
 #### ```minifier_path``` Absolute path to the html-minifier script
 These paths might include a ```~``` which will be substituted with the ```user.home``` property
+
+## ```compiler``` HTML compiler settings
+#### ```add_js``` JavaScript sources to add to the header in every HTML file (header is made if it doesn't exist)
+#### ```add_css``` Same, but with CSS files
+It's a good practice to add the ```/``` at the beginning of the paths, since that would indicate an absolute path
+#### ```footer_html``` (nullable) Text to add at the end of the first ```<body>``` tag in a ```<footer>``` tag
+#### ```auto_title``` Whether to add an ```<h1>``` tag to the body containing the contents of the first occurring ```<title>``` tag
+ - ```none``` completely off
+ - ```h1``` insert an ```h1``` tag if needed
+ - ```title``` insert a ```title``` tag if needed
+ - ```both``` automatically detect the presence of each, and insert the other if it doesn't exist
 
 ## ```make```
 The make configuration is responsible for specifying the files to compile or include in the built project
@@ -52,7 +63,7 @@ The make configuration is responsible for specifying the files to compile or inc
  - ```zip```
 #### ```output```
 #### ```mode``` The way HTML files are chosen
- - ```traverse```
+ - ```recurse```
  - ```root_only```
  - ```manual```
 #### ```manual``` (optional) The HTML files/dirs (traversed) to be compiled

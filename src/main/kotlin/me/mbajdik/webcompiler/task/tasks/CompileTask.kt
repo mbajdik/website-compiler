@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -38,7 +38,7 @@ abstract class CompileTask constructor(
     fun subtaskJS(path: String): JavascriptProcessTask = JavascriptProcessTask(manager, handler).subtask(path)
 
     companion object {
-        fun html(manager: Manager, handler: WebLocalFileHandler): HTMLProcessTask = HTMLProcessTask(manager, handler);
+        //fun html(manager: Manager, handler: WebLocalFileHandler): HTMLProcessTask = HTMLProcessTask(manager, handler);
         fun css(manager: Manager, handler: WebLocalFileHandler): CSSProcessTask = CSSProcessTask(manager, handler);
     }
 }

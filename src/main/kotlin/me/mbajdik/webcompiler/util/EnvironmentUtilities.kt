@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -21,7 +21,6 @@ package me.mbajdik.webcompiler.util
 
 import java.io.File
 import java.util.*
-import kotlin.collections.HashMap
 
 object EnvironmentUtilities {
     private var PATH_CACHE: HashMap<String, String>? = null;
@@ -55,4 +54,7 @@ object EnvironmentUtilities {
 
         PATH_CACHE = cache;
     }
+
+
+    fun isWindows() = System.getProperty("os.name").lowercase().startsWith("windows")
 }

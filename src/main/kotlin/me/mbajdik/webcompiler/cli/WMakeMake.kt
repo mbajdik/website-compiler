@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -19,6 +19,7 @@
 
 package me.mbajdik.webcompiler.cli
 
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import me.mbajdik.webcompiler.make.MakeConfig
 import me.mbajdik.webcompiler.make.MakeProcessor
@@ -156,8 +157,14 @@ object WMakeMake {
             path = makefile.name
         )
 
+        val configJson = JsonParser.parseString(configHandler.fileContentsString(manager))
+        if (configJson == null || configJson !is JsonObject) {
+            println(ANSI.red("The wmake.json is invalid! (either empty or invalid JSON syntax is used)"))
+            exitProcess(1);
+        }
+
         val config = MakeConfig(
-            JsonParser.parseString(configHandler.fileContentsString(manager)).asJsonObject
+            configJson.asJsonObject
         )
 
         val makeRootDir =
@@ -218,7 +225,7 @@ object WMakeMake {
             saveDir.deleteRecursively();
 
             for (path in dirs.keys) {
-                val savePath = path.withRoot(saveDir)
+                val savePath = path.osFileWithRoot(saveDir)
 
                 savePath.parentFile?.mkdirs();
                 Files.write(savePath.toPath(), dirs[path] ?: byteArrayOf())

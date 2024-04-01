@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -23,6 +23,7 @@ import me.mbajdik.webcompiler.util.ANSI
 import me.mbajdik.webcompiler.util.FileUtilities
 import me.mbajdik.webcompiler.util.TerminalUtils
 import java.io.File
+import kotlin.io.path.absolutePathString
 import kotlin.system.exitProcess
 
 object WMakeDumpConfig {
@@ -37,6 +38,8 @@ object WMakeDumpConfig {
 
         if (file.exists() && !TerminalUtils.yesOrNo(false, "There's already a project here, replace it?")) {
             exitProcess(0);
+        } else {
+            file.delete();
         }
 
         try {

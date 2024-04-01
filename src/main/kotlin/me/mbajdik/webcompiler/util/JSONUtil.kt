@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -21,7 +21,7 @@ package me.mbajdik.webcompiler.util
 
 import com.google.gson.*
 import java.lang.reflect.Type
-import java.util.Collections
+import java.util.*
 
 
 object JSONUtil {

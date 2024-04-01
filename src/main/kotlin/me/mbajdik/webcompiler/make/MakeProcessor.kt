@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
-import kotlin.collections.HashMap
 
 class MakeProcessor(
     private val manager: Manager,
@@ -47,7 +46,7 @@ class MakeProcessor(
         val zos = ZipOutputStream(bos);
 
         for ((path, contents) in processed()) {
-            val pathString = path.file().toString();
+            val pathString = path.absolute().unix();
             val e = ZipEntry(pathString);
 
             zos.putNextEntry(e);
@@ -61,7 +60,7 @@ class MakeProcessor(
     }
 
     private fun processFiles(): HashMap<SegmentedPath, ByteArray> {
-        val collected = recurseCollect(SegmentedPath.EMPTY);
+        val collected = recurseCollect(SegmentedPath.EMPTY_RELATIVE);
 
         val finalThreads = explicitThreads ?: config.threads
 
@@ -111,7 +110,7 @@ class MakeProcessor(
     }
 
     private fun recurseCollect(parentPath: SegmentedPath): MakeTaskCollection {
-        val children = parentPath.withRoot(root).listFiles() ?: emptyArray<File>();
+        val children = parentPath.osFileWithRoot(root).listFiles() ?: emptyArray<File>();
 
         val outHTML = mutableListOf<SegmentedPath>()
         val outOther = mutableListOf<SegmentedPath>()
@@ -153,15 +152,25 @@ class MakeProcessor(
     private fun handleCompile(path: SegmentedPath): ByteArray {
         val handler = WebLocalFileHandler.local(
             root = root,
-            path = path.file().toString()
+            path = path.os()
         )
 
-        val task = HTMLProcessTask(manager = manager, handler = handler)
+        val task = HTMLProcessTask(
+            manager = manager,
+            handler = handler,
+            addJS = config.addJS,
+            addCSS = config.addCSS,
+
+            footerHTML = config.footerHTML,
+            autoTitle = config.autoTitle
+        )
 
         val contents = if (config.minifyHTML) task.minifiedProcess(
-            options = config.minifierOptions,
             nodePath = config.nodePath,
             minifierPath = config.minifierPath,
+
+            minifyJS = config.minifyJS,
+            minifyCSS = config.minifyCSS
         ) else task.process();
 
         return contents.toByteArray();
@@ -170,7 +179,7 @@ class MakeProcessor(
     private fun handleOther(path: SegmentedPath): ByteArray {
         val handler = WebLocalFileHandler.local(
             root = root,
-            path = path.file().toString()
+            path = path.os()
         )
 
         val bytes = handler.fileBytes(manager);
@@ -185,7 +194,7 @@ class MakeProcessor(
     private fun checkIncludeHTML(childPath: SegmentedPath): Boolean {
         var include = false;
         when (config.mode) {
-            MakeConfig.Mode.TRAVERSE -> {include = true}
+            MakeConfig.Mode.RECURSE -> {include = true}
             MakeConfig.Mode.ROOT_ONLY -> {if (childPath.isSingle()) include = true;}
             MakeConfig.Mode.MANUAL -> {
                 include = childPath.isChildOfAny(config.manualFiles);

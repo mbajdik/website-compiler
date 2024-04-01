@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -29,7 +29,7 @@ class CSSProcessTask constructor(
     val handler: WebLocalFileHandler
 ): CompileTask(manager, handler) {
     init {
-        if (handler.isLocal()) manager.setSeenSite(SegmentedPath.explode(handler.path()))
+        if (handler.isLocal()) manager.setSeenSite(SegmentedPath.explode(handler.path()).relative())
     }
 
     override fun subtask(path: String): CSSProcessTask = CSSProcessTask(manager, handler.fileRelative(path));

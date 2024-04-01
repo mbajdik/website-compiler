@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -21,15 +21,20 @@ package me.mbajdik.webcompiler.make
 
 import com.google.gson.JsonObject
 import me.mbajdik.webcompiler.util.JSONUtil
-import me.mbajdik.webcompiler.util.URIUtilities
 import me.mbajdik.webcompiler.util.SegmentedPath
-import java.util.Collections
+import java.util.*
 
 class MakeConfig(json: JsonObject) {
+    val minifyHTML: Boolean;
+    val minifyJS: Boolean;
+    val minifyCSS: Boolean;
     val nodePath: String?;
     val minifierPath: String?;
-    val minifyHTML: Boolean;
-    val minifierOptions: List<String>;
+
+    val addJS: List<String>;
+    val addCSS: List<String>;
+    val footerHTML: String?;
+    val autoTitle: AutoTitleMode;
 
     val root: String?;
     val outputType: OutputType;
@@ -50,14 +55,29 @@ class MakeConfig(json: JsonObject) {
 
     init {
         val jsonMinifier = JSONUtil.De.safeJsonObject(JSONUtil.De.safeObjectRoute(json, "minifier"));
-        val jsonMinifierOptions = jsonMinifier?.get("options");
+        val jsonMinifierMinifyJS = jsonMinifier?.get("minify_js");
+        val jsonMinifierMinifyCSS = jsonMinifier?.get("minify_js");
         val jsonMinifierNodePath = jsonMinifier?.get("node_path");
         val jsonMinifierMinifierPath = jsonMinifier?.get("minifier_path");
 
-        this.minifyHTML = JSONUtil.De.isSafeArray(jsonMinifierOptions);
-        this.minifierOptions = if (minifyHTML) JSONUtil.De.safeArray(jsonMinifierOptions) else emptyList()
+        this.minifyHTML = jsonMinifier != null;
+        this.minifyJS = JSONUtil.De.safeBoolean(jsonMinifierMinifyJS, true);
+        this.minifyCSS = JSONUtil.De.safeBoolean(jsonMinifierMinifyCSS, true);
         this.nodePath = userRelativePath(JSONUtil.De.safeString(jsonMinifierNodePath));
         this.minifierPath = userRelativePath(JSONUtil.De.safeString(jsonMinifierMinifierPath));
+
+
+
+        val jsonCompiler = JSONUtil.De.safeJsonObject(JSONUtil.De.safeObjectRoute(json, "compiler"));
+        val jsonCompilerAddJS = jsonCompiler?.get("add_js");
+        val jsonCompilerAddCSS = jsonCompiler?.get("add_css");
+        val jsonCompilerFooterHTML = jsonCompiler?.get("footer_html");
+        val jsonCompilerAutoTitle = jsonCompiler?.get("auto_title");
+
+        addJS = JSONUtil.De.safeArray(jsonCompilerAddJS);
+        addCSS = JSONUtil.De.safeArray(jsonCompilerAddCSS);
+        footerHTML = JSONUtil.De.safeString(jsonCompilerFooterHTML);
+        autoTitle = JSONUtil.De.safeEnum(jsonCompilerAutoTitle, AutoTitleMode.NONE);
 
 
 
@@ -111,8 +131,9 @@ class MakeConfig(json: JsonObject) {
         return baseUnused || (baseManual && manualUnused);
     }
 
+    enum class AutoTitleMode { NONE, H1, TITLE, BOTH }
     enum class OutputType { DIR, ZIP }
-    enum class Mode { TRAVERSE, ROOT_ONLY, MANUAL }
+    enum class Mode { RECURSE, ROOT_ONLY, MANUAL }
     enum class OtherMode { ALL, UNUSED_SITE, NO_SITE, ASSETS, MANUAL, NONE }
     enum class OtherManualMode { ALL, UNUSED_SITE, NO_SITE, ASSETS }
 

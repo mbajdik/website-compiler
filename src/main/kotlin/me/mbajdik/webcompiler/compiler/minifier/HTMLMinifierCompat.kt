@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -24,8 +24,6 @@ import me.mbajdik.webcompiler.task.tasks.MinifyTask
 import me.mbajdik.webcompiler.util.EnvironmentUtilities
 
 object HTMLMinifierCompat {
-    val DEFAULT_OPTIONS = listOf("--collapse-whitespace", "--minify-css", "--minify-js")
-
     fun minifyHTML(task: MinifyTask): String {
         val probableNodePath = EnvironmentUtilities.getFullExecutablePath("node") ?: task.nodePath
         val probableScriptPath = EnvironmentUtilities.getFullExecutablePath("html-minifier") ?: task.minifierPath;
@@ -33,11 +31,15 @@ object HTMLMinifierCompat {
         if (probableNodePath == null) createNotInPathError(task, "node");
         if (probableScriptPath == null) createNotInPathError(task, "html-minifier");
 
+        val optionsList = mutableListOf("--collapse-whitespace")
+        if (task.minifyJS) optionsList.add("--minify-js")
+        if (task.minifyCSS) optionsList.add("--minify-css")
+
         val process = Runtime.getRuntime().exec(
             arrayOf(
                 probableNodePath,
                 probableScriptPath,
-            ) + task.options.toTypedArray()
+            ) + optionsList.toTypedArray()
         )
 
         process.outputStream.write(task.unminified.toByteArray())

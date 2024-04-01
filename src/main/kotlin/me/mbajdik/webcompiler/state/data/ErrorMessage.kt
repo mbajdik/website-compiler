@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -21,7 +21,6 @@ package me.mbajdik.webcompiler.state.data
 
 import me.mbajdik.webcompiler.task.helpers.DebugInformationSupplier
 import me.mbajdik.webcompiler.util.ANSI
-import kotlin.text.StringBuilder
 
 data class ErrorMessage(
     val task: DebugInformationSupplier,

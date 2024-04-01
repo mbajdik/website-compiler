@@ -1,10 +1,7 @@
 {
   "minifier": {
-    "options": [
-      "--minify-js",
-      "--minify-css",
-      "--collapse-whitespace"
-    ]
+    "minify_js": true,
+    "minify_css": false
   },
   "make": {
     "mode": "root_only",

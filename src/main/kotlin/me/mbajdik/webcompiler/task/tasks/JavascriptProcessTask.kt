@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -28,12 +28,13 @@ class JavascriptProcessTask constructor(
     val handler: WebLocalFileHandler
 ): CompileTask(manager, handler) {
     init {
-        if (handler.isLocal()) manager.setSeenSite(SegmentedPath.explode(handler.path()))
+        if (handler.isLocal()) manager.setSeenSite(SegmentedPath.explode(handler.path()).relative())
     }
 
     override fun subtask(path: String): JavascriptProcessTask = JavascriptProcessTask(manager, handler.fileRelative(path));
     override fun getTaskTypeName(): String = "JS import"
 
 
-    fun process(): String = handler.fileContentsString(manager);
+    // Adding a semicolon for good measure (will probably not cause a problem, since breaking JS files is an awful thing
+    fun process(): String = handler.fileContentsString(manager) + ";";
 }

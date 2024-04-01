@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -28,9 +28,11 @@ class MinifyTask(
     val manager: Manager,
     private val displayPath: String,
     val unminified: String,
-    val options: List<String>,
     val nodePath: String?,
     val minifierPath: String?,
+
+    val minifyJS: Boolean,
+    val minifyCSS: Boolean
 ): Task() {
     private var minified: String? = null;
 
@@ -39,10 +41,12 @@ class MinifyTask(
         manager: Manager,
         handler: WebLocalFileHandler,
         unminified: String,
-        options: List<String>,
-        nodePath: String? = null,
-        minifierPath: String? = null
-    ) : this(manager, handler.getDisplayPath(), unminified, options, nodePath, minifierPath)
+        nodePath: String?,
+        minifierPath: String?,
+
+        minifyJS: Boolean,
+        minifyCSS: Boolean
+    ) : this(manager, handler.getDisplayPath(), unminified, nodePath, minifierPath, minifyJS, minifyCSS)
 
     override fun getDisplayPath(): String = displayPath;
     override fun getTaskTypeName(): String = "HTML minify"

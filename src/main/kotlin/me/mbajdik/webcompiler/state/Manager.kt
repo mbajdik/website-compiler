@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bajdik Márton
+ * Copyright (C) 2024 Bajdik Márton
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -139,5 +139,5 @@ class Manager constructor(
 
 
     fun setSeenSite(path: SegmentedPath) = seenSiteFiles.put(path, Unit);
-    fun getSeenSite(path: SegmentedPath): Boolean = seenSiteFiles.containsKey(path);
+    fun getSeenSite(path: SegmentedPath): Boolean = seenSiteFiles.containsKey(path.relative());
 }
