@@ -53,9 +53,13 @@ object HTML {
         )
 
         if (task.autoTitle != MakeConfig.AutoTitleMode.NONE && rootState.foundTitle != null) {
-            if (rootState.foundH1Tag && !rootState.foundTitleTag) {
+            if (rootState.foundH1Tag && !rootState.foundTitleTag &&
+                (task.autoTitle == MakeConfig.AutoTitleMode.TITLE || task.autoTitle == MakeConfig.AutoTitleMode.BOTH)) {
+
                 rebuilt = addTitleToHead(rebuilt, rootState.foundTitle!!)
-            } else if (rootState.foundTitleTag && !rootState.foundH1Tag) {
+            } else if (rootState.foundTitleTag && !rootState.foundH1Tag &&
+                (task.autoTitle == MakeConfig.AutoTitleMode.H1 || task.autoTitle == MakeConfig.AutoTitleMode.BOTH)) {
+
                 rebuilt = addH1TitleToBody(rebuilt, rootState.foundTitle!!)
             }
         }

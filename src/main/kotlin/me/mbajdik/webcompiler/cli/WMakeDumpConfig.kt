@@ -23,7 +23,6 @@ import me.mbajdik.webcompiler.util.ANSI
 import me.mbajdik.webcompiler.util.FileUtilities
 import me.mbajdik.webcompiler.util.TerminalUtils
 import java.io.File
-import kotlin.io.path.absolutePathString
 import kotlin.system.exitProcess
 
 object WMakeDumpConfig {

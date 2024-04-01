@@ -52,11 +52,6 @@ object WMakeCompile {
             .desc("Don't minify the output of the HTML compiler")
             .build();
 
-        val optionBuiltinMinify = Option.builder()
-            .longOpt("builtin-minify")
-            .desc("Use the built-in minifier (has some flaws)")
-            .build()
-
         val optionNoMinifyJS = Option.builder()
             .longOpt("no-minify-js")
             .desc("Don't minify the JavaScript in the compiled HTML")
@@ -87,7 +82,6 @@ object WMakeCompile {
         options.addOption(optionRoot);
         options.addOption(optionOutput);
         options.addOption(optionNoMinify);
-        options.addOption(optionBuiltinMinify);
         options.addOption(optionNoMinifyJS);
         options.addOption(optionNoMinifyCSS);
         options.addOption(optionLogFile);

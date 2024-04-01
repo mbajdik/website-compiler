@@ -1,10 +1,10 @@
 {
   "minifier": {
     "minify_js": true,
-    "minify_css": false
+    "minify_css": true
   },
   "make": {
-    "mode": "root_only",
+    "mode": "recurse",
     "ignore_hidden": true,
     "threads": 3,
 

@@ -4,7 +4,7 @@
 ```
 Usage: wmake [make|build|new|create|compile] [SUBCOMMAND OPTIONS]
 
-DEFAULT SUBCOMMAND: make
+DEFAULT SUBCOMMAND: make (automatically executed if in a project)
 
 COMMANDS
     make, build:    Builds a wmake project
@@ -19,8 +19,9 @@ usage: wmake compile [OPTIONS...] [FILE]
  -h,--help             Display this message
  -l,--loglevel <arg>   Specify the log level (e.g.: for errors only: 0)
     --logfile <arg>    The file to save the log to
- -m,--options <arg>    Options to pass over to the minifier
  -n,--no-minify        Don't minify the output of the HTML compiler
+    --no-minify-css    Don't minify the CSS in the compiled HTML
+    --no-minify-js     Don't minify the JavaScript in the compiled HTML
  -o,--save <arg>       Where to save the output, STDOUT is used by default
  -r,--root <arg>       The project root, CWD is used by default
 ```
